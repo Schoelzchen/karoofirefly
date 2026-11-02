@@ -162,3 +162,32 @@ Dekodierung der Werte der UT:
 - `8CE5DD02` = `2F00010F00FF`: Index 0, Frontlicht, Modus 15 (dauerhaft an), Abblendlicht, Intensität `FF` (nicht gemeldet).
 
 **Die UT meldet „Licht aus“ als unterstützten Modus.** Das evo1300-Projekt nutzt an der HORI 1300 bereits `00` und `04 01`/`04 00` auf diesem Kanal.
+
+## Phase 5: Steuerung über den Light Control Point (2026-11-02, erfolgreich)
+
+Automatischer Test vom Mac mit Auswertung über die Webcam. Es wurden keine A2-Frames gesendet. **Taster und Modi waren danach unverändert.**
+
+| Befehl auf `8CE5DD03` | Indication | Wirkung | Status `8CE5DD02` danach |
+|---|---|---|---|
+| `00` | `80 00 01` (ca. 60–120 ms) | Control erhalten | – |
+| `03 00` | `80 03 01` | **Licht aus** (Wand auf Dunkel-Niveau) | `2F 00 01 00 00 xx` |
+| `03 0F` | `80 03 01` | **Licht an** | `2F 00 01 0F 00 xx` |
+| `04 01` | `80 04 01` | Fernlicht (Status `…0F 01…`, Wand heller) | `2F 00 01 0F 01 19` |
+| `04 00` | `80 04 01` | Abblendlicht | `2F 00 01 0F 00 19` |
+| `06 0A` / `06 19` / `06 32` | `80 06 01` | Intensität 10 / 25 / 50 % | Byte 5 = Intensität |
+| `03 11` | `80 03 01` | SOS | Modus `11` |
+| `03 07` | **keine** | keine Wirkung, obwohl in den Features gemeldet | – |
+
+Weitere Ergebnisse:
+- **Reaktionszeit:** Die Indication kommt nach 40–130 ms.
+- **Verhalten nach dem Trennen:** Die Lampe bleibt im gesetzten Zustand (nach `03 00` aus), ist sofort wieder sichtbar und verbindbar. Nach erneutem `00` schaltet `03 0F` sie wieder ein, mit der zuletzt gesetzten Intensität.
+- **Max. Temperatur:** 35 °C.
+- **Gleichzeitige Nutzung mit der Magicshine-App:** Solange die App die Einstellungsseite der Lampe zeigt, ist die Lampe für andere Clients nicht erreichbar. In der Übersicht (Akku und Temperatur) klappt die gleichzeitige Verbindung.
+- **Noch offen:** Befehle ohne vorheriges `00`, Intensität über 50 % und mit Fernlicht, Tastendruck während laufender BLE-Steuerung, Bedeutung von `01` (Reset).
+
+### Folgerung für KarooFireFly
+Die UT sollte über den Light Control Point gesteuert werden, nicht über `A2`:
+- Verbinden, Indications auf `8CE5DD03` und Notify auf `8CE5DD02` einschalten, `00` senden.
+- Danach `03 00`/`03 0F` für Aus/An, `04 00`/`04 01` für Abblend/Fernlicht, `06 <%>` für die Helligkeit, `03 11` für SOS.
+- Den Status aus `8CE5DD02` als Rückmeldung verwenden.
+- Akku aus `2A19`, Temperatur aus `A1` (Frame-Byte 8).
