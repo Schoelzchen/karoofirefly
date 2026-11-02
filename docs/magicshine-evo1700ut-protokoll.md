@@ -356,3 +356,24 @@ Nachtrag (Max, laut Anleitung):
 - Danach sucht die Lampe erneut nach Zubehör, z. B. einer Shimano-Di2-Schaltung.
 - Laut Anleitung ist die Fernbedienung das letzte gesuchte Gerät. Ist sie gekoppelt, sucht die Lampe nicht weiter.
 - Das passt zu `42820001`: ANT+-Nummer, Adresse der Fernbedienung und zwei leere Plätze, vermutlich u. a. für Di2. Bestätigt ist die Zuordnung nicht.
+
+## Auswertung der Anleitungen (2026-11-02)
+
+Quellen: das offizielle *EVO 1700 UT User Manual*, ein Foto von Max' gedrucktem MJ-6558-Faltblatt und die Magicshine-FAQ. Die Zusammenfassung steht in der englischen Referenz, Abschnitt 7. Die PDFs bleiben wegen des Urheberrechts lokal.
+
+Wichtigste Punkte und Abgleich:
+- **Lumen und Laufzeit:**
+  - Abblend 200 / 400 / 800 lm mit 17 / 9 / 5 h
+  - Fernlicht 400 / 800 / 1700 lm mit 10 / 5 / 3 h
+  - Day Flash 10,5 h, Night Flash 6 h
+
+  Die Statuswerte 25 / 50 / 100 % beziehen sich auf das Maximum der jeweiligen Gruppe.
+- **Akku-LED:** grün 100–21 %, rot 20–11 %, rot blinkend 10–1 %. **Unter 10 % zwingt die Lampe auf die kleinste Abblendstufe.** Das erklärt den beobachteten Sprung von 100 auf 20 %.
+- **Fernbedienung:**
+  - □ Klick = volle Leistung, ein weiterer Klick geht zurück. Das bestätigt `0F 01 64` → `0F 00 19` aus Phase 12. Max' Beschreibung („Fernlicht-Modus“) war hier ungenau.
+  - □ Doppelklick = Blinkmodus.
+  - Sperre durch 5 s halten.
+  - Koppeln: ○ und □ 5 s halten, Fernbedienung an die Lampe halten, klicken.
+- **Lampe:** Klick bei ausgeschalteter Lampe zeigt den Akku. 3 s halten im ausgeschalteten Zustand sperrt die Lampe. Kopplung löschen laut UT-Handbuch: Klick, dann 3 s halten. Andere Quellen nennen 10 s, das ist ungeklärt.
+- **Di2:** Vor dem Koppeln die Fernbedienung entkoppeln. Fernbedienung und Di2 teilen sich offenbar die Kopplung. ANT+ läuft unabhängig davon.
+- Nicht im Handbuch: SOS (geht per BLE), Temperaturschutz, Auto-Off, Akkukapazität, StVZO.

@@ -229,7 +229,8 @@ Measured facts:
 
 - `2A19` (standard Battery Level) reads `100` on a full battery. Whether it has finer resolution than the `A4` value is **not yet measured**. No notifications arrived during short tests.
 - `A4`/`B4` data byte 4 is also `100` on a full battery.
-- Field observation by the owner: Magicshine app and Karoo (ANT+) showed 100 % for most of a ride and then jumped to about 20 %.
+- Field observation by the owner: Magicshine app and Karoo (ANT+) showed 100 % for most of a ride and then jumped to about 20 %. This matches the indicator thresholds in the manual (21 % / 11 %, section 7.3).
+- Official runtimes per mode (section 7.2) allow a software estimate of the remaining runtime.
 - On the non-UT EVO 1700 (firmware v1), lenne0815 measured a full discharge in which `B4` only reported 100 → 50 → 30. The light's own button LED shows green (21–100 %), red (11–20 %) and red flashing (1–10 %).
 
 ---
@@ -241,18 +242,67 @@ Measured facts:
 
 ---
 
-## 7. Physical controls (reported by the owner)
+## 7. Physical controls and official specifications
 
-| Control | Action | Effect |
+Source: official *EVO 1700 UT User Manual* (magicshine.com, "User Manuals"), the printed MJ-6558 leaflet and the Magicshine FAQ. Summarised here. The manuals themselves are © Magicshine and not reproduced.
+
+### 7.1 Light button
+
+| Gesture | State | Effect |
 |---|---|---|
-| Light button | short press | cycle brightness levels of the current beam (3 factory levels) |
-| Light button | double click | switch between low beam and high beam |
-| Light button | long press (> 1 s) | on / off |
-| MJ-6558 remote, button 1 | short press | cycle brightness levels (high-beam levels while in high-beam mode) |
-| MJ-6558 remote, button 2 | short press | enter / leave high-beam mode |
-| MJ-6558 remote | long press (> 1 s) on one of the buttons | on / off |
+| hold 1 s | on / off | switch on / off; it switches on in the last used mode |
+| click | on | next level LOW → MEDIUM → HIGH |
+| double click | on | low beam ↔ high beam |
+| click | off | show battery level for 3 s |
+| hold 3 s | off | lock on (for transport). Unlock: hold 3 s or connect the charger |
+| click, then hold 3 s | off | clear the pairing memory (remote / Di2). Other Magicshine manuals give "click/double click + 10 s" instead, so not verified on the UT |
 
-If custom modes exist for a beam (section 4.3), the short press cycles the custom modes instead of the factory levels.
+### 7.2 Modes, output and runtime (manual, ANSI FL1, 25 °C, 25 km/h airflow)
+
+| Beam | Level | Lumen | Runtime | BLE status intensity |
+|---|---|---|---|---|
+| Low | LOW | 200 | 17 h | 25 % |
+| Low | MEDIUM | 400 | 9 h | 50 % |
+| Low | HIGH | 800 | 5 h | 100 % |
+| High | LOW | 400 | 10 h | 25 % |
+| High | MEDIUM | 800 | 5 h | 50 % |
+| High | HIGH | 1700 | 3 h | 100 % |
+| Flash | Day Flash | 0–1700 | 10.5 h | – |
+| Flash | Night Flash | 400–1700 | 6 h | – |
+
+The BLE intensity in `8CE5DD02` is therefore relative to the maximum of the active beam, not to 1700 lm. The manual does not mention SOS, although the light supports it via BLE. It does not state the battery capacity either.
+
+### 7.3 Battery indicator and low battery
+
+| Indicator | Meaning |
+|---|---|
+| steady green | 100–21 % (while charging: full) |
+| steady red | 20–11 % |
+| flashing red | 10–1 % (while charging: charging) |
+
+- **Below 10 %, the light switches automatically to the lowest low-beam level and cannot be changed.** Whether BLE commands are still accepted then has not been measured.
+- Charging takes about 3 h at 5 V / 2 A.
+- These thresholds match the owner's observation of 100 % → 20 % on app and Karoo. The light seems to report only these indicator steps.
+
+### 7.4 MJ-6558 remote
+
+| Gesture | Effect |
+|---|---|
+| ○ or □ hold 1 s | on / off (with a paired FTR tail light: both) |
+| ○ click | next level |
+| ○ double click | low beam ↔ high beam |
+| □ click | full output (1700 lm); a further click on ○ or □ returns |
+| □ double click | flash mode |
+| any button hold 5 s | lock / unlock the remote (3 s red / green) |
+
+- **Pairing (leaflet):** Switch the light on. Hold ○ and □ for about 5 s until the remote flashes blue. Hold the remote close to the light button until the light flashes blue as well, then click ○ or □. Both indicators show blue for 2 s.
+- The remote charges in about 1 h. Its indicator also shows the light's battery state (green / red / flashing red).
+- "FTR LightSync" = **F**ront light, **T**ail light, **R**emote. Compatible: EVO 1700 UT, EVO 1700 PRO, MJ-6558.
+
+### 7.5 Shimano Di2 and ANT+
+
+- **Di2:** Clear an existing remote pairing first. Wake Di2 with a button press and switch the light on; it searches (flashing blue). Success = 3 s steady blue; it gives up after 5 min. At least two free Di2 buttons are needed. Example mapping: channel 1 click = levels, double = beam; channel 2 click = full high beam, double = Day/Night Flash. Remote and Di2 thus appear to share one pairing.
+- **ANT+:** independent of remote/Di2 pairing. The light supports the ANT+ Lighting Control profile and may appear as a number on the bike computer (here: device number `33653`, see section 2).
 
 ## 8. Remote control MJ-6558 – radio protocol (measured)
 
@@ -282,8 +332,8 @@ Effect on the UT, as reported via `8CE5DD02`:
 - ○ short: next level (25 → 50 → 100 %).
 - ○ long: on/off.
 - ○ double: switch to high beam.
-- □ short: toggle high beam (high-beam level ↔ low beam).
-- □ double and □ long produced no status change.
+- □ short: full output (status `0F 01 64` = high beam 100 %); the next □/○ click returns (`0F 00 19`). This matches the manual (section 7.4).
+- □ double (flash mode per manual) and □ long (on/off per manual) produced no status notification in the test; not verified.
 
 The payload contains **no device ID**. The light stores the **Bluetooth address of its paired remote**: characteristic `42820004` reads `600200003B77`, which is exactly the remote's address `60:02:00:00:3B:77`. So the light very probably filters remote packets by this address. This was not tested directly.
 
@@ -321,6 +371,9 @@ Other findings:
 
 ## 11. Open questions
 
+- Exact gesture to clear the pairing on the UT (manual: click + 3 s; other Magicshine manuals: 10 s).
+- Does the light still accept BLE commands below 10 % battery (forced lowest level)?
+- Over-temperature behaviour (not in the manual; 46 °C measured without derating).
 - Does `2A19` report finer battery steps during a discharge?
 - What do `A6 01` and the ack value `r` of `B6` mean?
 - Maximum number of custom-mode slots (≥ 6 confirmed).
