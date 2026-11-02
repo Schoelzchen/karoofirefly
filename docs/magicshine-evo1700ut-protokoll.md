@@ -350,3 +350,9 @@ Folgerungen:
 - Offen: die Beschreibungen (`2901`) der Characteristics im Service `42820001`, die Bedeutung von `42820002` = `33653` und ob `42820003`/`42820005` freie Kopplungsplätze sind.
 
 Nachtrag: `42820002` = `33653` ist die **ANT+-Gerätenummer** der Lampe. Max hat das beim erneuten Koppeln am Karoo bestätigt. Der Service `42820001` enthält also Kennungen für Funk-Verbindungen: ANT+-Nummer, Adresse der gekoppelten Fernbedienung und vermutlich freie Plätze.
+
+Nachtrag (Max, laut Anleitung):
+- Fernbedienung und Lampe werden wie in der Anleitung beschrieben gekoppelt. Über die Fernbedienung lässt sich die Kopplung auch wieder auflösen.
+- Danach sucht die Lampe erneut nach Zubehör, z. B. einer Shimano-Di2-Schaltung.
+- Laut Anleitung ist die Fernbedienung das letzte gesuchte Gerät. Ist sie gekoppelt, sucht die Lampe nicht weiter.
+- Das passt zu `42820001`: ANT+-Nummer, Adresse der Fernbedienung und zwei leere Plätze, vermutlich u. a. für Di2. Bestätigt ist die Zuordnung nicht.

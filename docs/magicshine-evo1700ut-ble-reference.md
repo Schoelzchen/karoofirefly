@@ -291,6 +291,8 @@ The payload contains **no device ID**. The light stores the **Bluetooth address 
 
 Android can advertise such service data but normally cannot use a foreign, fixed Bluetooth address. Because of the address filter, emulation from a Karoo is unlikely to work either. Reading the remote's broadcasts passively, as an input for a Karoo extension, works fine.
 
+Pairing (from the manuals, reported by the owner): the remote is paired with the light as described in the manual, and the pairing can be removed from the remote. Without a paired remote, the light searches for other accessories again, e.g. a Shimano Di2 system. The manual suggests that the remote is the last accessory in this search; once it is paired, the light stops searching. This fits service `42820001`, which holds the light's ANT+ device number, the remote's address and two empty slots (`000000000000`), possibly for further accessories such as Di2. The slot assignment is not confirmed.
+
 Other findings:
 - The remote also exposes a GATT server with `FFE1` (`FFE0`–`FFE7`) and the Alibaba AIS OTA service `FEB3` (`FED4`–`FED8`), similar to the non-UT EVO 1700. Readable values were empty or zero. Reading them did not affect pairing.
 - **While a BLE client was connected, the UT did not advertise, and switching it on from off with the remote failed repeatedly.** Without a connection, it worked immediately (tested once). A controller that keeps a permanent connection may therefore block switching on with the remote.
