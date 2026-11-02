@@ -254,16 +254,43 @@ Measured facts:
 
 If custom modes exist for a beam (section 4.3), the short press cycles the custom modes instead of the factory levels.
 
-## 8. Remote control MJ-6558 – radio protocol (not verified on the UT)
+## 8. Remote control MJ-6558 – radio protocol (measured)
 
-According to [JaJaJim/KMagicWheeltopBlip](https://github.com/JaJaJim/KMagicWheeltopBlip), the Magicshine MJ-6558 remote (`M0-C0`) does not connect. It broadcasts button presses as service data on UUID `FFE1` in its advertising:
-- byte 3 = sequence token
-- codes `0x11`/`0x12` = □ single/double
-- codes `0x21`/`0x22` = ○ single/double
+The MJ-6558 (advertised name `M0-C0 MJ_6558`) is a **BLE advertiser**. "FTR LightSync" is therefore plain BLE advertising, not a separate radio protocol. Each button event is sent as a burst of about 3–17 advertisements carrying service data on UUID `FFE1`. Nothing is sent between presses.
 
-Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it was not tested. The Xingzhe spec also defines a "paired remote" command (`24`), which was not tested.
+Service data (7 bytes):
 
----
+```
+18 01 06 <counter> 02 02 <code>
+```
+
+| Byte | Meaning |
+|---|---|
+| 0–2 | `18 01 06`, constant |
+| 3 | event counter, +1 per event, wraps around |
+| 4–5 | `02 02`, constant |
+| 6 | button code |
+
+| Code | Button ○ | Button □ |
+|---|---|---|
+| short | `21` | `11` |
+| double | `22` | `12` |
+| long (> 1 s) | `23` | `13` |
+| press start (seen just before a code) | `00` | `00` |
+
+Effect on the UT, as reported via `8CE5DD02`:
+- ○ short: next level (25 → 50 → 100 %).
+- ○ long: on/off.
+- ○ double: switch to high beam.
+- □ short: toggle high beam (high-beam level ↔ low beam).
+- □ double and □ long produced no status change.
+
+The payload contains **no device ID**. The light must therefore recognise its paired remote by the remote's Bluetooth address, or it accepts any matching packet; this is not determined yet. Android can advertise such service data but normally cannot choose a fixed foreign address, and macOS cannot advertise service data at all. Emulating the remote has not been tried.
+
+Other findings:
+- The remote also exposes a GATT server with `FFE1` (`FFE0`–`FFE7`) and the Alibaba AIS OTA service `FEB3` (`FED4`–`FED8`), similar to the non-UT EVO 1700. Readable values were empty or zero. Reading them did not affect pairing.
+- **While a BLE client was connected, the UT did not advertise, and switching it on from off with the remote failed repeatedly.** Without a connection, it worked immediately (tested once). A controller that keeps a permanent connection may therefore block switching on with the remote.
+- Earlier, the Xingzhe "paired remote" query (`24 FFFFFFFF`) got no answer, so the pairing ID cannot be read from the light.
 
 ## 9. Firmware
 
@@ -296,7 +323,8 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 - Do Control Point commands work without `00`? What happens on a button press during BLE control?
 - What does intensity above 50 % and on the high beam look like?
 - What do `FFE2`–`FFE7` and service `42820001` do?
-- How does the UT pair with the MJ-6558 remote?
+- How does the UT identify its paired MJ-6558 (address or something else), and how is pairing done?
+- Does a held BLE connection always block switching on with the remote?
 
 ---
 

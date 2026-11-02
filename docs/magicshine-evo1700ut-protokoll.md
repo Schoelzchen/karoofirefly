@@ -308,3 +308,25 @@ Folgerungen:
 - Die UT unterstützt Auto-Sleep, Aufwecken, Sleep-Zeit, Bremslicht, Lichtsensor, Animation, Navigation und die Fernbedienungs-Abfrage über dieses Protokoll nicht. Unbekannte Befehle ignoriert sie still, statt wie in der Spezifikation vorgesehen mit `80 <Op> 02` zu antworten. Genauso verhält sie sich bei `03 07`.
 - Die Fernbedienungs-Kennung lässt sich so nicht auslesen.
 - Korrektur zu Phase 10: Der Status `2F00010000FF` direkt nach dem Verbinden war nicht veraltet, sondern bedeutet „aus“. Die Lampe war in Phase 10 zu Beginn vermutlich aus.
+
+## Phase 12: Funkprotokoll der Fernbedienung MJ-6558 (2026-11-02)
+
+Rein passiver Mitschnitt mit Duplikaten (pyobjc/CoreBluetooth). Gleichzeitig war der Mac mit der Lampe verbunden, nur lesend (`00`, Status-Notify).
+
+- **Die MJ-6558 (`M0-C0 MJ_6558`) ist ein BLE-Advertiser.** „FTR LightSync“ ist also Bluetooth-Rundfunk.
+- Format der Service Data auf `FFE1`, alle 442 Pakete 7 Byte lang: `18 01 06 <Zähler> 02 02 <Code>`.
+  - Der Zähler steigt pro Ereignis um 1.
+  - Codes ○: `21` kurz, `22` doppelt, `23` lang. Codes □: `11` kurz, `12` doppelt, `13` lang. `00` kurz vor dem Code (Taste gedrückt).
+  - Pro Ereignis eine Salve von 3–17 Paketen, zwischen den Drücken kommt nichts.
+- Wirkung laut Lampenstatus:
+  - ○ kurz: nächste Stufe (25 → 50 → 100 %)
+  - ○ lang: an/aus
+  - ○ doppelt: Fernlicht
+  - □ kurz: Fernlicht umschalten
+  - □ doppelt und □ lang: keine Statusänderung
+- **Keine Geräte-ID im Inhalt.** Die Lampe erkennt ihre Fernbedienung vermutlich an der Funkadresse. Ob sie jedes passende Paket annimmt, ist offen.
+- **Mit gehaltener Mac-Verbindung ließ sich die ausgeschaltete Lampe per Fernbedienung nicht einschalten** (mehrere lange Drücke). Ohne Verbindung ging es sofort, getestet einmal. Direkt nach dem Ausschalten klappte es auch mit Verbindung.
+- **Die Lampe advertist nicht, solange ein Client verbunden ist.**
+- Bei abgeschirmter Fernbedienung kam das Paket am Mac an, die Lampe reagierte aber nicht (Reichweite).
+- Die GATT-Datenbank der Fernbedienung (nur gelesen) enthält `FFE1` (`FFE0`–`FFE7`) und den Alibaba-Update-Dienst `FEB3` (`FED4`–`FED8`). Die Werte waren leer. Die Kopplung blieb danach intakt.
+- Ein Nachbau vom Karoo (Android) wäre inhaltlich einfach. Unklar ist, ob die Lampe die Adresse prüft. Nichts gesendet.
