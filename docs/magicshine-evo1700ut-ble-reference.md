@@ -187,7 +187,20 @@ Measured facts:
 
 ---
 
-## 7. Remote control MJ-6558 (not verified on the UT)
+## 7. Physical controls (reported by the owner)
+
+| Control | Action | Effect |
+|---|---|---|
+| Light button | short press | cycle brightness levels of the current beam (3 factory levels) |
+| Light button | double click | switch between low beam and high beam |
+| Light button | long press (> 1 s) | on / off |
+| MJ-6558 remote, button 1 | short press | cycle brightness levels (high-beam levels while in high-beam mode) |
+| MJ-6558 remote, button 2 | short press | enter / leave high-beam mode |
+| MJ-6558 remote | long press (> 1 s) on one of the buttons | on / off |
+
+If custom modes exist for a beam (section 4.3), the short press cycles the custom modes instead of the factory levels.
+
+## 8. Remote control MJ-6558 – radio protocol (not verified on the UT)
 
 According to [JaJaJim/KMagicWheeltopBlip](https://github.com/JaJaJim/KMagicWheeltopBlip), the Magicshine MJ-6558 remote (`M0-C0`) does not connect. It broadcasts button presses as service data on UUID `FFE1` in its advertising:
 - byte 3 = sequence token
@@ -198,7 +211,7 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 
 ---
 
-## 8. Firmware
+## 9. Firmware
 
 - The UT uses **Nordic Secure DFU** (`FE59`). Such updates are normally signed by the vendor, so custom or modified firmware via OTA is very unlikely to be accepted.
 - The non-UT EVO 1700 instead uses an Alibaba AIS OTA service (`FEB3`/`FED4`–`FED8`). Its reference implementation only checks a CRC.
@@ -206,7 +219,7 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 
 ---
 
-## 9. Do-not-send list
+## 10. Do-not-send list
 
 | Target | Reason |
 |---|---|
@@ -219,7 +232,7 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 
 ---
 
-## 10. Open questions
+## 11. Open questions
 
 - Does `2A19` report finer battery steps during a discharge?
 - What do `A6 01` and the ack value `r` of `B6` mean?
@@ -231,13 +244,13 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 
 ---
 
-## 11. Method and tools
+## 12. Method and tools
 
 - **Mac:** Python with [bleak](https://github.com/hbldh/bleak) for scanning, GATT dumps and controlled writes. A webcam measured wall brightness to detect light changes automatically.
 - **iPhone:** Apple's Bluetooth logging profile plus PacketLogger to capture the official Magicshine app. A custom `.pklg` parser decoded the ATT traffic.
 - **Karoo 3:** `adb`, read-only.
 
-## 12. Sources and credits
+## 13. Sources and credits
 
 - [lenne0815/karoo-magicshine-controls](https://github.com/lenne0815/karoo-magicshine-controls): EVO 1700 (non-UT) captures and discharge test
 - [TimFourcode/evo1300](https://github.com/TimFourcode/evo1300): `FLAG_SAVE` observation, first use of `8CE5DD03` (HORI 1300)
