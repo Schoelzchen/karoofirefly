@@ -66,3 +66,24 @@ Direktes Lesen lieferte ein `B4`-Frame `DE13B400020800000A0000000000000000A7ED` 
 - Namensfilter `M2-` passt, die Lampe wird erkannt und als zwei Lampengruppen (M2) behandelt.
 - Temperatur-Parser: der Marker `17 03` passt nicht, auf Index 4 umstellen.
 - Akku zusätzlich über den Standarddienst `180F`/`2A19` per Notify lesen und vergleichen, ob er feiner auflöst als `A4`.
+
+## Phase 2: A2-Befehle (2026-11-02, abgebrochen)
+
+Gesendet wurden genau drei A2-Frames, alle mit Flag `00` statt `BB`:
+
+| Schritt | Frame | Erwartet | Ergebnis |
+|---|---|---|---|
+| 0 | `DE14A2010101010000000000000000000000B6ED` | aus | Licht unverändert an, kein Ack |
+| 1 | `DE14A2010101010A00015000000000000000EDED` | Gruppe 0 auf 10 % | keine sichtbare Änderung, kein Ack |
+| Ende | `DE14A2010101010000000000000000000000B6ED` | aus | Licht unverändert an, per Taster ausgeschaltet |
+
+**Nebenwirkung:** Danach waren die Modi am Taster verändert. Beim Abblendlicht gibt es nur noch einen schwachen Modus, beim Fernlicht weiterhin alle drei.
+
+Folgerungen:
+- Bei der UT setzt `A2` **nicht** das aktuelle Licht, sondern überschreibt offenbar die **Modus-Liste** einer Lichtgruppe. Das passiert **auch mit Flag `00`**. Die Annahme aus dem evo1300-Projekt („`00` = nur vorübergehend“) gilt für die UT nicht.
+- Vermutlich ist das Byte nach `A2 01` die Anzahl der Einträge bzw. die Gruppe, gefolgt von Einträgen `(an, Muster, Helligkeit)`. Das ist unbestätigt.
+- KarooFireFly würde bei der UT mit jedem Moduswechsel die Modus-Liste der Lampe verändern. **Die BLE-Steuerung von KarooFireFly an der UT vorerst nicht benutzen.**
+- Temperatur: Frame-Byte 8 der B1-Antwort stieg von 27 auf 28. Das stützt die Index-4-Hypothese.
+- Von `2A19` und `FFE3` kamen keine Notifications.
+
+Nächster Schritt: Die Magicshine-App mit PacketLogger mitschneiden, während die Modi in der App zurückgesetzt werden (siehe `magicshine-ble-analyse-apple.md`). Das liefert die korrekten Befehle für die UT. Bis dahin werden keine A2-Frames mehr gesendet.
