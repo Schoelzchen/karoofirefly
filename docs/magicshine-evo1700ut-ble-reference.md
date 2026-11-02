@@ -41,7 +41,7 @@ The non-UT **EVO 1700** is a different design. It has a different GATT layout, a
 | | `8CE5DD02-…` | read, notify | Light Machine Status |
 | | `8CE5DD03-…` | write, indicate | **Light Control Point** (section 3) |
 | | `8CE5DD04-…` | write, indicate | Light Network (spec: not implemented). **Not tested** |
-| `42820001-D3E8-480B-95BB-2A34850D4048` | `42820002`–`42820008` | read | unknown, ASCII strings. Possibly related to Di2/Shimano (unconfirmed) |
+| `42820001-D3E8-480B-95BB-2A34850D4048` | `42820002`–`42820008` | read | ASCII strings. `42820004` = `600200003B77` = **Bluetooth address of the paired MJ-6558 remote** (`60:02:00:00:3B:77`). `42820003`/`42820005` read `000000000000`, possibly empty pairing slots. `42820002` = `33653`, unknown. The `2901` descriptors were not read yet |
 | `FE59` Nordic Secure DFU | `8EC90003-F315-4F60-9FB8-838830DAEA50` | write, indicate | Buttonless DFU. **Never write** |
 
 The advertising contains the Xingzhe light service short UUID `25D4`.
@@ -285,7 +285,11 @@ Effect on the UT, as reported via `8CE5DD02`:
 - □ short: toggle high beam (high-beam level ↔ low beam).
 - □ double and □ long produced no status change.
 
-The payload contains **no device ID**. The light must therefore recognise its paired remote by the remote's Bluetooth address, or it accepts any matching packet; this is not determined yet. Android can advertise such service data but normally cannot choose a fixed foreign address, and macOS cannot advertise service data at all. Emulating the remote has not been tried.
+The payload contains **no device ID**. The light stores the **Bluetooth address of its paired remote**: characteristic `42820004` reads `600200003B77`, which is exactly the remote's address `60:02:00:00:3B:77`. So the light very probably filters remote packets by this address. This was not tested directly.
+
+**Emulation attempt from macOS (failed):** Passing the undocumented key `"kCBAdvDataServiceData"` (string key) to `CBPeripheralManager.startAdvertising` reports success, but an iPhone scanning nearby never received any `FFE1` service data from the Mac. With a local name added, only flags, TX power and the name were sent. A `CBUUID` key crashes (`-[CBUUID UTF8String]`). macOS therefore cannot send this payload. The light did not react, whether or not the real remote was nearby.
+
+Android can advertise such service data but normally cannot use a foreign, fixed Bluetooth address. Because of the address filter, emulation from a Karoo is unlikely to work either. Reading the remote's broadcasts passively, as an input for a Karoo extension, works fine.
 
 Other findings:
 - The remote also exposes a GATT server with `FFE1` (`FFE0`–`FFE7`) and the Alibaba AIS OTA service `FEB3` (`FED4`–`FED8`), similar to the non-UT EVO 1700. Readable values were empty or zero. Reading them did not affect pairing.
@@ -322,8 +326,9 @@ Other findings:
 - Is there a BLE command equivalent to a short button press ("next level")? None is known on the connection-based channels. The MJ-6558 broadcast is a candidate.
 - Do Control Point commands work without `00`? What happens on a button press during BLE control?
 - What does intensity above 50 % and on the high beam look like?
-- What do `FFE2`–`FFE7` and service `42820001` do?
-- How does the UT identify its paired MJ-6558 (address or something else), and how is pairing done?
+- What do `FFE2`–`FFE7` do?
+- How is the MJ-6558 paired, and are `42820003`/`42820005` further pairing slots? What do the `2901` descriptors of service `42820001` say?
+- What is `42820002` = `33653`?
 - Does a held BLE connection always block switching on with the remote?
 
 ---

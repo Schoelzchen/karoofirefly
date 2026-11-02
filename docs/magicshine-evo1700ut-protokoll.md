@@ -330,3 +330,21 @@ Rein passiver Mitschnitt mit Duplikaten (pyobjc/CoreBluetooth). Gleichzeitig war
 - Bei abgeschirmter Fernbedienung kam das Paket am Mac an, die Lampe reagierte aber nicht (Reichweite).
 - Die GATT-Datenbank der Fernbedienung (nur gelesen) enthält `FFE1` (`FFE0`–`FFE7`) und den Alibaba-Update-Dienst `FEB3` (`FED4`–`FED8`). Die Werte waren leer. Die Kopplung blieb danach intakt.
 - Ein Nachbau vom Karoo (Android) wäre inhaltlich einfach. Unklar ist, ob die Lampe die Adresse prüft. Nichts gesendet.
+
+## Phase 13: Emulation der Fernbedienung vom Mac (2026-11-02)
+
+Ohne Installation, nur mit pyobjc/CoreBluetooth. Der Mac versuchte, den Rundruf der MJ-6558 (○ kurz, `21`) über den undokumentierten Schlüssel `"kCBAdvDataServiceData"` zu senden: V1 Key `FFE1`, V2 volle UUID, V3 zusätzlich mit Name, V4 CBUUID-Key. Je Variante zuerst `00` mit Zähler N, dann der Code mit N+1. Runde 1 lief mit der echten Fernbedienung im Nebenraum, Runde 2 mit ihr neben der Lampe.
+
+| Ergebnis | Beleg |
+|---|---|
+| **macOS sendet die Service Data nicht** | `didStartAdvertising` meldet jedes Mal „OK“. Ein iPhone in der Nähe (Max' Idee, iOS-Trace) empfing aber keine `FFE1`-Daten vom Mac. Mit Name kamen nur Flags, TX Power und Name an. Die echte MJ-6558 wurde in derselben Messung zuverlässig empfangen |
+| V4 (CBUUID-Key) | Absturz `-[CBUUID UTF8String]` |
+| Lampe | keine Reaktion in beiden Runden. Logisch, das Paket kam nie an |
+| **Adresse der Fernbedienung** | `60:02:00:00:3B:77` (iPhone-Trace). **Die Lampe meldet in `42820004` genau `600200003B77`.** Sie speichert also die Adresse der gekoppelten Fernbedienung und filtert vermutlich danach |
+
+Folgerungen:
+- Vom Mac lässt sich die Fernbedienung nicht nachahmen.
+- Wegen des gespeicherten Adress-Filters ist auch ein Nachbau vom Karoo sehr unwahrscheinlich, weil Android keine fremde, feste Adresse annehmen kann.
+- Passives Mitlesen der Fernbedienung, z. B. als Eingabe für eine Karoo-Extension, funktioniert dagegen.
+- Die echte MJ-6558 funktionierte danach normal.
+- Offen: die Beschreibungen (`2901`) der Characteristics im Service `42820001`, die Bedeutung von `42820002` = `33653` und ob `42820003`/`42820005` freie Kopplungsplätze sind.
