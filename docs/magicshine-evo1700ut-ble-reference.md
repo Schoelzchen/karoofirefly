@@ -103,11 +103,44 @@ Minimal sequence:
 4. Send `03 0F`, `04 00`, `06 32` and so on as needed.
 5. Write `03 00` to switch off.
 
-### 3.3 Measured behaviour
+### 3.3 Full opcode list (from the spec) and UT status
+
+Opcodes on the Light Control Point as listed in the Xingzhe spec, and whether they were tested on the UT. Functions `10`–`1A` accept `FF` (or `FFFF`/`FFFFFFFF`) as "read current value". The UT's Features response lacks the Basic Functions field, so their support is unknown.
+
+| Op | Meaning | Parameter | UT |
+|---|---|---|---|
+| `00` | Request Control | – | ✅ works |
+| `01` | Reset device control | – | untested (scope unclear) |
+| `02` | Set light type | u8 | untested (do not send) |
+| `03` | Set light mode | u8 | ✅ `00`, `0F`, `11`; `07` no response |
+| `04` | Beam low/high | `00`/`01` | ✅ works |
+| `05` | Focus | 0–100 | untested; Features say not supported |
+| `06` | Intensity | 0–100 | ✅ works |
+| `07` | Intensity mode manual/auto | `00`/`01` | untested |
+| `08` | Fall detection | `00`/`01` | untested |
+| `09` | Colour | ≤ 4 bytes | untested; light is single-colour |
+| `0A` / `0B` | Training / navigation data | ≤ 18 bytes | untested; format not specified |
+| `10` | Auto-sleep | `00`/`01`/`FF` | untested |
+| `11` | Wake on motion | `00`/`01`/`FF` | untested |
+| `12` | Auto-sleep time | u16 30–6000 s / `FFFF` | untested |
+| `13` | Brake detection | `00`/`01`/`FF` | untested |
+| `14` | Brake light intensity | 0–100 / `FF…` | untested |
+| `15` | Ambient light sensor | `00`/`01`/`FF` | untested |
+| `16`–`18` | Team animation / navigation sync / data sync | `00`/`01`/`FF` | untested |
+| `19` / `1A` | Animation ID / team animation ID | u32 / `FFFFFFFF` | untested |
+| `24` | Paired remote (`FFFFFFFF` = query) | u32 | untested |
+| `DA` | Date and time | 8 bytes | untested |
+| `DF` | Enter DFU | – | **never send** |
+
+Beyond the official app, the profile provides: real off/on, live beam and intensity changes without touching custom modes, live SOS, and a status notification for every change, including button presses.
+
+### 3.4 Measured behaviour
 
 - **Latency:** The indication arrives 40–130 ms after the write.
 - **Disconnect keeps state:** After `03 00` and a disconnect, the light stays off. It keeps advertising and accepts a new connection within about 1 s. A new `00` plus `03 0F` switches it back on with the last intensity.
 - **Stored modes stay untouched:** In the tested sequences the button modes were unchanged afterwards.
+- **Button presses are reported.** After `00`, every press on the light's button produces a `8CE5DD02` notification with mode, beam and intensity, also for custom modes. The factory modes report as 25 / 50 / 100 % for both beams; a double click passes through intermediate values before the beam changes. Nothing is sent unsolicited on `FFE0`.
+- The first status read right after connecting can be stale (e.g. `2F 00 01 00 00 FF` while the light was on). Trust notifications that follow a change.
 - **Custom modes (section 4.3):** `03 00` / `03 0F` also act while a custom mode is active. `03 0F` then returns with the custom mode's intensity.
 - **No release command:** The spec has no command to hand back control. Disconnecting was enough in all tests.
 
@@ -179,6 +212,10 @@ Measured facts:
 - **The official app keeps its custom modes locally and does not read them from the light.** It never sends `A5` and only reads `FFE0` (which holds only the last frame) and `2A19`. Modes written by another client do not appear in the app.
 - **When the app connects, it writes all its stored custom modes back to the light on its own** (`BB` on slot 1, 2, … in order, about 60 ms apart). A mode deleted by another client therefore comes back the next time the app connects. To remove a custom mode for good, delete it in the app.
 - Custom modes survive power cycles.
+
+**Reading custom modes:** There is no list query (`A5` gets no answer, and the app does not read the list). Two partial methods work:
+- **Content:** Subscribe to `8CE5DD02` and cycle through the modes with the button. Each press reports the active mode's pattern, beam and intensity.
+- **Count:** Send `BB` from a high slot downwards (8, 7, 6, …). Writes beyond the end of the list are rejected (`r = 00`, no status notification); the first accepted slot is count + 1. **But** the accepted `BB` creates a mode, and deleting it again with `AA` once left the button unresponsive until the list was cleared and `03 0F` was sent. This is not a safe read-only method.
 
 **Safe clean-up:** repeat `AA` on slot `01` (any content) until the ack is `r = 00`. Then the list is empty, and both beams are back to their factory modes.
 
@@ -252,6 +289,8 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 - Does `2A19` report finer battery steps during a discharge?
 - What do `A6 01` and the ack value `r` of `B6` mean?
 - Maximum number of custom-mode slots (≥ 6 confirmed).
+- Are functions `10`–`1A` and `24` supported (query with `FF`)?
+- Why did `AA` on the newly appended last slot block the button once?
 - Is there a BLE command equivalent to a short button press ("next level")? None is known on the connection-based channels. The MJ-6558 broadcast is a candidate.
 - Do Control Point commands work without `00`? What happens on a button press during BLE control?
 - What does intensity above 50 % and on the high beam look like?

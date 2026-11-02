@@ -275,3 +275,23 @@ Weitere Befunde:
 - Beim Bearbeiten sendet die App die Werte der anderen Gruppe als „aus“ mit (z. B. `00 01 27`). Beim Öffnen eines Modus sendet sie ihn zweimal.
 - Taster: Mit beiden App-Modi hatte jedes Licht genau einen Modus. Nach dem Löschen in der App wieder je drei.
 - Die Lampe war am Ende im Werkszustand. App und Mac waren nie gleichzeitig verbunden.
+
+## Phase 10: Xingzhe gegen App, Status bei Tastendruck, Zählen eigener Modi (2026-11-02)
+
+**Teil A, Recherche:** Die vollständige Opcode-Liste der Spezifikation steht in der englischen Referenz (Abschnitt 3.3). Über die App hinaus bestätigt sind:
+- Aus und Ein
+- Abblend/Fernlicht und Helligkeit live, ohne eigene Modi
+- SOS live
+- Status-Meldungen
+
+Laut Spezifikation gibt es außerdem Auto-Sleep, Sleep-Zeit, Aufwecken durch Erschütterung, Bremslicht, Lichtsensor, Animationen, Navigation, Fernbedienungs-Abfrage sowie Datum und Uhrzeit (Opcodes `10`–`1A`, `24`, `DA`). Auf der UT ist davon noch nichts getestet. Die meisten haben eine Abfrage-Variante mit `FF`.
+
+**Teil B, Ergebnisse:**
+- **Jeder Tastendruck erzeugt eine Status-Meldung** auf `8CE5DD02` mit Modus, Licht und Helligkeit, auch bei eigenen Modi.
+- **Werksmodi laut Status:** Abblend und Fernlicht je 25 / 50 / 100 %. Beim Doppelklick kommen vor dem Wechsel Zwischenwerte.
+- **Eigene Modi, wie gemeldet:** Abblend 10 % (`…0F000A`), Abblend-SOS 20 % (`…110014`), Fernlicht 30 % (`…0F011E`). Am Taster ergab das Abblend 2 Modi, Fernlicht 1.
+- **Auslesen:** Nur der aktive Modus ist direkt lesbar. Die ganze Liste erhält man nur durch Durchschalten am Taster mit Mitlesen des Status.
+- **Zählen über abgelehnte `BB`:** Slot 8–5 wurden abgelehnt (Ack `00`, keine Meldung), Slot 4 angenommen. Damit sind 3 Modi gezählt, das Aufräumen hat es bestätigt.
+  - **Nebenwirkung:** Nach `AA` auf Slot 4 reagierte der Taster nicht mehr. Erst nach dem vollständigen Aufräumen und `03 0F` ging er wieder. Die Ursache ist offen; in Phase 6 lief eine ähnliche Lage ohne Blockade.
+- Der erste Status nach dem Verbinden war veraltet (`2F00010000FF` bei leuchtender Lampe).
+- Endzustand: je drei Modi, Lampe aus, höchstens 39 °C, App die ganze Zeit geschlossen.
