@@ -171,6 +171,8 @@ Measured facts:
 - When the active custom mode is deleted, the light jumps to the next remaining mode, or back to the factory mode when none is left.
 - Ack `r`: `01` = applied, `00` = nothing changed (empty or out-of-range slot). Exception: one delete with `r = 00` did take effect in phase 6.
 - The official app always writes slot `01` and enables exactly one group. It sends `BB` while you move the slider and `AA` when you delete an entry or leave without saving. "Save" in the app sends nothing. The app UI offers one custom mode per beam; the light itself supports more.
+- **The official app keeps its custom modes locally and does not read them from the light.** It never sends `A5` and only reads `FFE0` (which holds only the last frame) and `2A19`. Modes written by another client do not appear in the app.
+- **When the app connects, it writes its stored custom mode back to the light on its own** (`BB` on slot `01`). A mode deleted by another client therefore comes back the next time the app connects. To remove a custom mode for good, delete it in the app.
 - Custom modes survive power cycles.
 
 **Safe clean-up:** repeat `AA` on slot `01` (any content) until the ack is `r = 00`. Then the list is empty, and both beams are back to their factory modes.
@@ -244,6 +246,7 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 
 - Does `2A19` report finer battery steps during a discharge?
 - What do `A6 01` and the ack value `r` of `B6` mean?
+- Which slots does the official app use when it stores custom modes for both beams?
 - Maximum number of custom-mode slots (≥ 6 confirmed).
 - Is there a BLE command equivalent to a short button press ("next level")? None is known on the connection-based channels. The MJ-6558 broadcast is a candidate.
 - Do Control Point commands work without `00`? What happens on a button press during BLE control?

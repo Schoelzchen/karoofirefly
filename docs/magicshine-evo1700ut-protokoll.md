@@ -240,3 +240,21 @@ Die Modi am Taster wurden per Webcam gezählt. Max hat dafür den Taster gedrüc
 Standardmodi (Wandhelligkeit, nur grob vergleichbar): Abblend ca. 100 / 127 / 140, Fernlicht ca. 92 / 130 / 156.
 
 Hinweis: Ein BLE-Befehl, der einem kurzen Tastendruck entspricht („nächste Stufe“), ist auf den Verbindungskanälen nicht bekannt. Die Fernbedienung MJ-6558 sendet ihre Tasten per Advertising. Das kann macOS nicht nachahmen (kein eigenes Service-Data-Advertising), ein Android-Gerät wie der Karoo grundsätzlich schon. Dafür fehlt aber ein Mitschnitt der echten Fernbedienung.
+
+## Phase 8: Speichert die App die eigenen Modi selbst? (2026-11-02)
+
+Ergebnis: **Die App speichert eigene Modi lokal und liest sie nicht aus der Lampe. Beim Verbinden schreibt sie ihren gespeicherten Modus von selbst zurück.** Mitschnitt per PacketLogger, fünf Verbindungen.
+
+| Test | Ergebnis |
+|---|---|
+| Mac legt Abblend 15 % und Fernlicht 35 % an, dann öffnet Max die App | Die App zeigt keinen dieser Modi. Danach findet der Mac genau 2 Modi, die App hat nichts gelöscht |
+| Max legt in der App 45 % an und speichert | Vorschau `BB` Slot 1 beim Verschieben, **„Speichern“ sendet nichts** |
+| Mac löscht den Modus aus der Lampe, Max öffnet die App erneut | Die App zeigt 45 % weiterhin an und **sendet beim Verbinden von selbst** `DE14A2010101012C000000000000000000BB21ED` (Slot 1, 44 %). Die Lampe hat den Modus wieder |
+| Was die App liest | nur `FFE0` (letzter Frame, z. B. `A6`/`BD`/`B1`/`B6`) und `2A19`. Kein `A5`, kein Light Service |
+| Was die App beim Verbinden sendet | `A6 01`, `A1`, `A4`, `AB`, `AC`, `AD`, dazu bei gespeicherten Modi `BB` |
+
+Folgerungen:
+- Ein eigener Modus ist erst dann dauerhaft weg, wenn er in der App gelöscht wird. Ein `AA` von einem anderen Gerät hält nur bis zum nächsten Verbinden der App.
+- Das erklärt sehr wahrscheinlich die „plötzlich fehlenden“ Modi vor Phase 2 und vor Phase 5: Die App war zwischendurch verbunden und hat ihren gespeicherten Modus zurückgeschrieben.
+- Weitere Optionen in der App laut Screenshots: „Light Sensor“, „Motion Detection“, „Light Group1/2“, „Add New Mode“ (Eintrag „Always On“).
+- Offen: Welche Slots nutzt die App bei mehreren gespeicherten Modi? Sendet „Zurück ohne Speichern“ ein `AA`? Das wurde in diesem Lauf nicht ausgelöst.
