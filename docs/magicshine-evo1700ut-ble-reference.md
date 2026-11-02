@@ -221,7 +221,7 @@ Measured facts:
 
 **Safe clean-up:** repeat `AA` on slot `01` (any content) until the ack is `r = 00`. Then the list is empty, and both beams are back to their factory modes.
 
-**Signature of an "off" written as A2:** `BB` with intensity 0 (e.g. `DE14A20101010100000000000000000000BB0DED`, used as "off" by KarooFireFly and LightONKaroo) does not switch the light off. It stores a custom mode that the light runs at its minimum, reported as intensity `01` (1 %). Such a stray 1 % low-beam mode was found once on the light after it had been re-added on a Karoo with LightONKaroo installed. The source was not proven.
+**Signature of an "off" written as A2:** `BB` with intensity 0 (e.g. `DE14A20101010100000000000000000000BB0DED`, used as "off" by KarooFireFly and LightONKaroo) does not switch the light off. It stores a custom mode that the light runs at its minimum, reported as intensity `01` (1 %). Such a stray 1 % low-beam mode appeared on the light whenever LightONKaroo had been opened on the Karoo. The code explains it: LightONKaroo (v0.1.6-R4) sends its "OFF" (`A2 … 01 01 00 … BB`) to every assigned light 500 ms after its settings screen opens (`setSettingsUiActive`), regardless of the light's enabled switch. KarooFireFly sends the same frame after each 3-second mode preview (`testMode`). After LightONKaroo was uninstalled and the mode deleted, it did not come back. Re-pairing the light via ANT+ on the Karoo did not create any custom mode.
 
 **Pitfalls seen in existing projects:** Several Karoo extensions use `BB` for every mode change and never send `AA`. On the UT this leaves custom modes behind, and the button then has only one mode left per beam. To repair it, delete the entries in the Magicshine app, or send `AA` with the same slot and content.
 
@@ -240,7 +240,8 @@ Measured facts:
 ## 6. Connections and coexistence
 
 - The light accepted two simultaneous connections (Mac + iPhone app) while the app showed its overview screen. While the app showed the light's **settings screen**, other clients could not find or connect to the light.
-- ANT+ control (Karoo's built-in light control) works independently of BLE. Turn off "Auto Control" on the Karoo if a BLE controller is used, so the two don't fight.
+- ANT+ control (Karoo's built-in light control) works independently of BLE. Seven seconds after re-pairing via ANT+ with **Auto Control on**, the Karoo switched the light to 50 % and then off by itself, while a BLE client was connected (it was only observed, not captured). Turn off "Auto Control" on the Karoo if a BLE controller is used, so the two don't fight.
+- ANT+ pairing on the Karoo does not touch the custom-mode list.
 
 ---
 

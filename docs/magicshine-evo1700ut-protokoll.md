@@ -399,3 +399,14 @@ Max drückte die echte Fernbedienung, der Mac las nur den Status `8CE5DD02` mit 
 Ergebnis: Beide Beschreibungen stimmen. „□ = volle Lichtleistung“ aus dem Handbuch ist korrekt. Max' „Fernlicht-Modus mit durchschaltbaren Stufen“ ist der Modus, den man über ○ doppelt erreicht.
 
 **Nebenfund:** Zu Beginn lag ein eigener Modus „Abblend 1 %“ auf Slot 1 (Status `2F00010F0001`). Die App zeigte keinen Eintrag, und unsere Tests haben nie 1 % gesendet. Genau so verhält sich aber das „Aus“ von KarooFireFly und LightONKaroo: `A2` mit Helligkeit 0 und `BB` legt einen eigenen Modus an, den die Lampe mit Minimum betreibt (vgl. Phase 4, Schritt 8: „sehr dunkel“). Vermutlich hat also LightONKaroo beim erneuten Hinzufügen der Lampe am Karoo per BLE geschrieben, trotz deaktivierter BLE-Option. Bewiesen ist das nicht. Auf Max' Wunsch hat der Mac den Modus gelöscht (`AA` auf Slot 1), danach wieder je drei Modi.
+
+## Phase 15: LightONKaroo als Quelle des 1-%-Modus, ANT+-Neukopplung (2026-11-02)
+
+- Max hat LightONKaroo am Karoo einmal geöffnet und dann deinstalliert. Danach hatte die Lampe wieder nur **einen** Abblend-Modus.
+- `adb` bestätigt: Weder LightONKaroo noch KarooFireFly sind installiert.
+- Die Lampe hatte einen eigenen Modus auf Slot 1, gelöscht mit einem `AA`. Danach je drei Modi.
+- **ANT+-Neukopplung** (Sensor entfernt, gesucht, gekoppelt, Auto Control auf aus gestellt), dabei war der Mac nur lesend per BLE verbunden:
+  - **Es entstand kein eigener Modus**, auch kein Status-Notify in diese Richtung.
+  - 7 s nach dem Koppeln, mit Auto Control **an**, ging die Lampe von selbst auf 50 % und dann aus (`2F00010F0032` → `2F0001000032`). Max hat nichts gedrückt. Das passt zur Lichtsteuerung des Karoo über ANT+.
+- **Beleg im Quellcode von LightONKaroo (v0.1.6-R4):** `setSettingsUiActive(true)` sendet 500 ms nach dem Öffnen des Einstellungsbildschirms an **alle** zugeordneten Lampen `setMode("OFF")`, ohne Prüfung von „enabled“. Bei Magicshine-M2-Lampen ist das `DE14A20101010100000000000000000000BB0DED`, also ein eigener Modus „Abblend 0 %“, den die Lampe mit Minimum (1 %) betreibt. Damit ist der 1-%-Modus erklärt.
+- In KarooFireFly (diesem Repository) sendet `testMode` denselben „OFF“-Frame nach jeder 3-s-Vorschau.
