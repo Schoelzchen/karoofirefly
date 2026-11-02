@@ -258,3 +258,20 @@ Folgerungen:
 - Das erklärt sehr wahrscheinlich die „plötzlich fehlenden“ Modi vor Phase 2 und vor Phase 5: Die App war zwischendurch verbunden und hat ihren gespeicherten Modus zurückgeschrieben.
 - Weitere Optionen in der App laut Screenshots: „Light Sensor“, „Motion Detection“, „Light Group1/2“, „Add New Mode“ (Eintrag „Always On“).
 - Offen: Welche Slots nutzt die App bei mehreren gespeicherten Modi? Sendet „Zurück ohne Speichern“ ein `AA`? Das wurde in diesem Lauf nicht ausgelöst.
+
+## Phase 9: Slots der App, „Zurück ohne Speichern“, Löschen (2026-11-02)
+
+| Frage | Ergebnis |
+|---|---|
+| Slots bei zwei gespeicherten Modi | Vergabe in der Reihenfolge des Anlegens: Abblend 20 % → Slot 1, Fernlicht 40 % → Slot 2. Beim Verbinden schreibt die App **beide** zurück (Slot 1, dann Slot 2, ca. 60 ms Abstand) |
+| Zurück ohne Speichern, bestehender Modus (geändert oder unverändert) | **kein `AA`**, nur `BB` mit dem gespeicherten Wert |
+| Zurück ohne Speichern, neuer Modus | `AA` auf den neuen Slot (hier 3), danach `BB` auf den vorherigen Modus |
+| Löschen in der App (nach links wischen, Mülleimer) | `AA` auf den Slot des Eintrags, danach schreibt die App die verbleibenden Modi neu auf die nachgerückten Slots (Fernlicht von Slot 2 → Slot 1) |
+| Speichern | sendet nichts |
+
+Weitere Befunde:
+- **Ack `00` heißt nicht zuverlässig „fehlgeschlagen“.** `AA` auf Slot 3 bekam `00` und wirkte trotzdem, genau wie in Phase 6, Schritt 4.
+- Der Regler sendet etwa 1 % unter dem angezeigten Wert (20 → `13`, 30 → `1D`, 40 → `27`, 50 → `32`).
+- Beim Bearbeiten sendet die App die Werte der anderen Gruppe als „aus“ mit (z. B. `00 01 27`). Beim Öffnen eines Modus sendet sie ihn zweimal.
+- Taster: Mit beiden App-Modi hatte jedes Licht genau einen Modus. Nach dem Löschen in der App wieder je drei.
+- Die Lampe war am Ende im Werkszustand. App und Mac waren nie gleichzeitig verbunden.

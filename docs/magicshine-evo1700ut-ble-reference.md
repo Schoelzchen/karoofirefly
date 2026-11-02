@@ -169,10 +169,15 @@ Measured facts:
 - **`AA` deletes by slot. The rest of the frame is ignored.** A delete with the wrong content still removed the mode in that slot.
 - `BB` on a slot beyond the end of the list (e.g. slot 3 with one mode stored) is rejected (`r = 00`, no effect). Appending to the next free slot works.
 - When the active custom mode is deleted, the light jumps to the next remaining mode, or back to the factory mode when none is left.
-- Ack `r`: `01` = applied, `00` = nothing changed (empty or out-of-range slot). Exception: one delete with `r = 00` did take effect in phase 6.
-- The official app always writes slot `01` and enables exactly one group. It sends `BB` while you move the slider and `AA` when you delete an entry or leave without saving. "Save" in the app sends nothing. The app UI offers one custom mode per beam; the light itself supports more.
+- Ack `r`: `01` = applied. `00` comes for empty or out-of-range slots, but twice a delete with `r = 00` **did** take effect. So `r = 00` does not reliably mean "failed". Counting with "`AA` on slot 1 until `r = 00`" still works.
+- **How the official app uses slots:** It assigns slots in creation order (first saved mode → slot 1, second → slot 2), enables exactly one group per mode, and also sends the other group's stored values marked "off" (e.g. `00 01 27`). Its slider sends values about 1 % below the displayed value (20 % → `0x13`).
+  - Moving the slider: `BB` preview on that mode's slot. Opening a mode sends it twice.
+  - "Save": sends **nothing**.
+  - Back without saving, on an existing mode: `BB` with the stored value, no `AA`.
+  - Back without saving, on a new mode: `AA` on the new slot, then `BB` to restore the previous mode.
+  - Delete (swipe left, bin): `AA` on the entry's slot, then the remaining modes are rewritten to their shifted slots.
 - **The official app keeps its custom modes locally and does not read them from the light.** It never sends `A5` and only reads `FFE0` (which holds only the last frame) and `2A19`. Modes written by another client do not appear in the app.
-- **When the app connects, it writes its stored custom mode back to the light on its own** (`BB` on slot `01`). A mode deleted by another client therefore comes back the next time the app connects. To remove a custom mode for good, delete it in the app.
+- **When the app connects, it writes all its stored custom modes back to the light on its own** (`BB` on slot 1, 2, … in order, about 60 ms apart). A mode deleted by another client therefore comes back the next time the app connects. To remove a custom mode for good, delete it in the app.
 - Custom modes survive power cycles.
 
 **Safe clean-up:** repeat `AA` on slot `01` (any content) until the ack is `r = 00`. Then the list is empty, and both beams are back to their factory modes.
@@ -246,7 +251,6 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 
 - Does `2A19` report finer battery steps during a discharge?
 - What do `A6 01` and the ack value `r` of `B6` mean?
-- Which slots does the official app use when it stores custom modes for both beams?
 - Maximum number of custom-mode slots (≥ 6 confirmed).
 - Is there a BLE command equivalent to a short button press ("next level")? None is known on the connection-based channels. The MJ-6558 broadcast is a candidate.
 - Do Control Point commands work without `00`? What happens on a button press during BLE control?
