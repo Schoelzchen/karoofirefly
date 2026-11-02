@@ -1,0 +1,247 @@
+# Magicshine EVO 1700 UT – Bluetooth LE Reference
+
+Reverse-engineered description of the Bluetooth LE interface of the **Magicshine EVO 1700 UT** front light, measured on a real unit in November 2026.
+
+Unless a source is named, every statement here was measured on that unit. Statements taken from other projects or specifications are marked as such. The step-by-step German test logs are in [`magicshine-evo1700ut-protokoll.md`](magicshine-evo1700ut-protokoll.md).
+
+> **Disclaimer.** This is not an official Magicshine document. The interface is undocumented by Magicshine and may change with firmware updates. Writing to the light can change its stored modes. One command (`DF` on the Light Control Point) puts it into firmware-update mode. Use at your own risk.
+
+---
+
+## 1. Device under test
+
+| Item | Value |
+|---|---|
+| Advertised name | `M2-B0 EVO1700_UT` |
+| Manufacturer (`2A29`) | `Magicshine` |
+| Model (`2A24`) | `EVO1700 UT` |
+| Firmware (`2A26`) / Hardware (`2A27`) / Software (`2A28`) | `1.0.0` / `1.0.0` / `1.0.1` |
+| ANT+ product info (as shown by a Hammerhead Karoo 3) | model `522`, software `0.101`, hardware `1` |
+| Radio / bootloader | Nordic Semiconductor SoC with Nordic Secure DFU (`FE59`) |
+| Firmware state | updated via the official Magicshine iOS app on 2026-11-01, before all measurements |
+
+The non-UT **EVO 1700** is a different design. It has a different GATT layout, an Alibaba AIS OTA service (`FEB3`) instead of Nordic DFU, and no Xingzhe light service. See [lenne0815/karoo-magicshine-controls](https://github.com/lenne0815/karoo-magicshine-controls). Do not assume results transfer between the two.
+
+---
+
+## 2. GATT database
+
+| Service | Characteristic | Properties | Purpose |
+|---|---|---|---|
+| `180A` Device Information | `2A29`, `2A24`, `2A25`, `2A27`, `2A26`, `2A28`, `2A23`, `2A2A`, `2A50` | read | Standard. System ID, regulatory data and PnP ID read as zeros |
+| `180F` Battery | `2A19` | read, notify | Standard battery level in % |
+| `FFE1` Magicshine legacy | `FFE0` | read, write, notify | Magicshine command/response channel (section 4) |
+| | `FFE2` | read | unknown, read `01 00 01` |
+| | `FFE3` | read, notify | unknown, read `00 64` |
+| | `FFE4` | write | unknown, **not tested** |
+| | `FFE5` | read, indicate | unknown, empty |
+| | `FFE6` | write | unknown, **not tested** |
+| | `FFE7` | read, indicate | unknown, read `02 71 00` |
+| `ADB425D4-B1C6-11ED-AFA1-0242AC120002` Xingzhe Light Service | `8CE5DD01-0A4D-11E9-AB14-D663BD873D93` | read | Light Features |
+| | `8CE5DD02-…` | read, notify | Light Machine Status |
+| | `8CE5DD03-…` | write, indicate | **Light Control Point** (section 3) |
+| | `8CE5DD04-…` | write, indicate | Light Network (spec: not implemented). **Not tested** |
+| `42820001-D3E8-480B-95BB-2A34850D4048` | `42820002`–`42820008` | read | unknown, ASCII strings. Possibly related to Di2/Shimano (unconfirmed) |
+| `FE59` Nordic Secure DFU | `8EC90003-F315-4F60-9FB8-838830DAEA50` | write, indicate | Buttonless DFU. **Never write** |
+
+The advertising contains the Xingzhe light service short UUID `25D4`.
+
+---
+
+## 3. Recommended control path: Xingzhe Light Profile
+
+The service `ADB425D4-…` follows the public **Bluetooth Light Profile** of the bike computer maker Xingzhe (行者): <https://developer.imxingzhe.com/docs/device/light/> (version 1.6.0). It is meant for bike computers to control lights. The official Magicshine app does **not** use it. It only uses `FFE0`.
+
+This is the only path found that offers a real **off** command without touching the light's stored modes.
+
+### 3.1 Features and status as reported by the UT
+
+`8CE5DD01` Light Features = `02 00 81 80 02 00 0E FF 64 00`. The light returns 10 bytes; the spec defines 20, and the Basic Functions field is missing.
+
+| Field | Raw | Meaning (per spec) |
+|---|---|---|
+| Light Type (u16) | `0x0002` | front light |
+| Light Mode (u32) | `0x00028081` | bit 0 off, bit 7 fast flash, bit 15 steady on, bit 17 SOS |
+| Beam (u8) | `0x0E` | low/high beam supported, 3 modes |
+| Focus | `0xFF` | not supported |
+| Intensity | `0x64` | adjustable up to 100 % |
+| Color | `0x00` | single colour |
+
+`8CE5DD02` Light Machine Status, e.g. `2F 00 01 0F 00 19`:
+
+| Byte | Field | Example | Meaning |
+|---|---|---|---|
+| 0 | Flags | `2F` | fields present: index, type, mode, beam, intensity |
+| 1 | Light Index | `00` | |
+| 2 | Light Type | `01` | front light |
+| 3 | Light Mode | `0F` | `00` off, `0F` steady on, `11` SOS |
+| 4 | Beam Mode | `00` | `00` low beam, `01` high beam |
+| 5 | Intensity | `19` | current intensity in % (`FF` before the first `06` command) |
+
+The status is sent as a notification after every change.
+
+### 3.2 Control Point commands (`8CE5DD03`, write with response)
+
+Each command is `<opcode> [parameter]`. The light answers with an indication `80 <opcode> <result>`, where `01` = success. The spec also defines `02` not supported, `03` invalid parameter, `04` failed and `05` not permitted.
+
+| Command | Effect on the UT | Measured |
+|---|---|---|
+| `00` | Request Control. Send once after connecting, before any other command | ✅ `80 00 01` |
+| `03 00` | **Light off** (fully dark) | ✅ |
+| `03 0F` | Light on (steady) with the last intensity | ✅ |
+| `03 11` | SOS | ✅ |
+| `03 07` | Fast flash. **No effect, no indication**, even though it is listed in Features | ❌ |
+| `04 00` / `04 01` | Low beam / high beam (status confirms; high beam was not checked by eye) | ✅ |
+| `06 <0–100>` | Intensity in %. Tested with 10, 25 and 50 % on the low beam | ✅ |
+| `01` | Reset of device control. Scope unclear, **not tested** | – |
+| `DF` | **Enters DFU mode and disconnects. Never send** | – |
+
+Minimal sequence:
+1. Connect.
+2. Enable indications on `8CE5DD03` and notifications on `8CE5DD02`.
+3. Write `00` and wait for `80 00 01`.
+4. Send `03 0F`, `04 00`, `06 32` and so on as needed.
+5. Write `03 00` to switch off.
+
+### 3.3 Measured behaviour
+
+- **Latency:** The indication arrives 40–130 ms after the write.
+- **Disconnect keeps state:** After `03 00` and a disconnect, the light stays off. It keeps advertising and accepts a new connection within about 1 s. A new `00` plus `03 0F` switches it back on with the last intensity.
+- **Stored modes stay untouched:** In the tested sequences the button modes were unchanged afterwards.
+- **Custom modes (section 4.3):** `03 00` / `03 0F` also act while a custom mode is active. `03 0F` then returns with the custom mode's intensity.
+- **No release command:** The spec has no command to hand back control. Disconnecting was enough in all tests.
+
+---
+
+## 4. Magicshine legacy protocol (`FFE1` / `FFE0`)
+
+Used by the official Magicshine app and by existing community projects.
+
+### 4.1 Framing
+
+```
+DE <len> <cmd> <data …> <xor> ED
+```
+
+- `len` = total frame length including `DE` and `ED`.
+- `xor` = XOR of all bytes from `len` up to the last data byte.
+- Commands are written to `FFE0`. Responses arrive as notifications on `FFE0`. The response command is the request command + `0x10` (e.g. `A4` → `B4`).
+
+### 4.2 Queries (read-only)
+
+| Request | Response (UT) | Meaning |
+|---|---|---|
+| `DE06A400A2ED` (A4) | `DE13B40004000000640000000000000000C7ED` | battery: data byte 4 (frame byte 8) = `0x64` = 100 |
+| `DE06A100A7ED` (A1) | `DE0DB100001118071B0103ABED` | info; **temperature in °C = data byte 4 (frame byte 8)**, here 27 °C. It rose to 39 °C with the light on |
+| `DE06AD00ABED` (AD) | `…45564F313730305F5554…` | model name, ASCII `EVO1700_UT` |
+| `DE06AB00ADED` (AB) | `DE08BB0000FF4CED` | speed sensor, meaning unknown |
+| `DE06AC00AAED` (AC) | `DE08BC0000FF4BED` | light sensor, meaning unknown |
+| `DE06A500A3ED` (A5) | none | profiles; no answer on the UT |
+| `DE06A900AFED` (A9) | none | runtime; no answer on the UT |
+| `DE07A601EF4FED` (A6 01) | not observed | sent by the official app after connecting; meaning unknown, **not tested** |
+
+The official app polls `A1` and `A4` every 20 s.
+
+Projects written for other lamps locate the temperature by searching for the byte pattern `17 03`. That pattern does not occur on the UT; use the fixed position instead.
+
+### 4.3 `A2` – custom modes (not live control)
+
+```
+DE 14 A2 01 <slot> <G0: on, pattern, value> <G1: on, pattern, value> 00 00 00 00 00 00 <op> <xor> ED
+```
+
+| Field | Values |
+|---|---|
+| `slot` | Custom-mode slot, starting at `01`. The other project assumes up to 20 slots; only slots 1–2 were confirmed here |
+| G0 | low beam: `on` = `01`/`00`, `pattern` = `01` steady, `02` SOS, `03` flash, `value` = intensity in % |
+| G1 | high beam, same layout |
+| `op` | `BB` = add/overwrite custom mode, `AA` = delete custom mode. `00` is **ignored** (no ack, no effect) |
+
+Ack: `DE 07 B6 00 <r> <xor> ED`. Both `r = 01` and `r = 00` were observed. A delete with `r = 00` still took effect once, so the meaning of `r` is unclear.
+
+**What `BB` really does:** It does **not** set the light "live". It stores a custom mode, and the light switches to it immediately. From then on, the button cycles only through the custom modes of that beam group instead of its three factory modes. The custom mode survives power cycles. Deleting it with `AA` brings the factory modes back.
+
+Measured facts:
+- The slot is a slot number, **not** the beam choice. Two custom modes on slots 1 and 2, both low beam, gave two low-beam modes on the button.
+- The beam group is defined by which group is `on` in the frame. High beam on slot 1 plus low beam on slot 2 gave one custom mode in each group.
+- The official app always writes slot `01` and enables exactly one group. It sends `BB` while you move the slider and `AA` when you delete an entry or leave without saving. "Save" in the app sends nothing.
+- Probably the slots shift down after a delete (unconfirmed). After deleting slot 1, `AA` on slot 2 had no effect, and `BB` on slot 3 was rejected.
+
+**Pitfalls seen in existing projects:** Several Karoo extensions use `BB` for every mode change and never send `AA`. On the UT this leaves custom modes behind, and the button then has only one mode left per beam. To repair it, delete the entries in the Magicshine app, or send `AA` with the same slot and content.
+
+---
+
+## 5. Battery
+
+- `2A19` (standard Battery Level) reads `100` on a full battery. Whether it has finer resolution than the `A4` value is **not yet measured**. No notifications arrived during short tests.
+- `A4`/`B4` data byte 4 is also `100` on a full battery.
+- Field observation by the owner: Magicshine app and Karoo (ANT+) showed 100 % for most of a ride and then jumped to about 20 %.
+- On the non-UT EVO 1700 (firmware v1), lenne0815 measured a full discharge in which `B4` only reported 100 → 50 → 30. The light's own button LED shows green (21–100 %), red (11–20 %) and red flashing (1–10 %).
+
+---
+
+## 6. Connections and coexistence
+
+- The light accepted two simultaneous connections (Mac + iPhone app) while the app showed its overview screen. While the app showed the light's **settings screen**, other clients could not find or connect to the light.
+- ANT+ control (Karoo's built-in light control) works independently of BLE. Turn off "Auto Control" on the Karoo if a BLE controller is used, so the two don't fight.
+
+---
+
+## 7. Remote control MJ-6558 (not verified on the UT)
+
+According to [JaJaJim/KMagicWheeltopBlip](https://github.com/JaJaJim/KMagicWheeltopBlip), the Magicshine MJ-6558 remote (`M0-C0`) does not connect. It broadcasts button presses as service data on UUID `FFE1` in its advertising:
+- byte 3 = sequence token
+- codes `0x11`/`0x12` = □ single/double
+- codes `0x21`/`0x22` = ○ single/double
+
+Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it was not tested. The Xingzhe spec also defines a "paired remote" command (`24`), which was not tested.
+
+---
+
+## 8. Firmware
+
+- The UT uses **Nordic Secure DFU** (`FE59`). Such updates are normally signed by the vendor, so custom or modified firmware via OTA is very unlikely to be accepted.
+- The non-UT EVO 1700 instead uses an Alibaba AIS OTA service (`FEB3`/`FED4`–`FED8`). Its reference implementation only checks a CRC.
+- Do not write to any DFU characteristic, and do not send `DF` on the Light Control Point.
+
+---
+
+## 9. Do-not-send list
+
+| Target | Reason |
+|---|---|
+| `FE59` / `8EC90003` | Nordic DFU |
+| `8CE5DD03` opcode `DF` | enters DFU mode |
+| `8CE5DD03` opcodes `01`, `02`, `05`, `08`–`0B`, `24`, `DA` | untested; `02` changes the light type |
+| `8CE5DD04` | untested |
+| `FFE4`, `FFE6`, service `42820001` | unknown purpose |
+| `A2 … BB` without a matching `AA` | changes the button modes |
+
+---
+
+## 10. Open questions
+
+- Does `2A19` report finer battery steps during a discharge?
+- What do `A6 01` and the ack value `r` of `B6` mean?
+- Do the custom-mode slots shift after a delete? How many slots are there?
+- Do Control Point commands work without `00`? What happens on a button press during BLE control?
+- What does intensity above 50 % and on the high beam look like?
+- What do `FFE2`–`FFE7` and service `42820001` do?
+- How does the UT pair with the MJ-6558 remote?
+
+---
+
+## 11. Method and tools
+
+- **Mac:** Python with [bleak](https://github.com/hbldh/bleak) for scanning, GATT dumps and controlled writes. A webcam measured wall brightness to detect light changes automatically.
+- **iPhone:** Apple's Bluetooth logging profile plus PacketLogger to capture the official Magicshine app. A custom `.pklg` parser decoded the ATT traffic.
+- **Karoo 3:** `adb`, read-only.
+
+## 12. Sources and credits
+
+- [lenne0815/karoo-magicshine-controls](https://github.com/lenne0815/karoo-magicshine-controls): EVO 1700 (non-UT) captures and discharge test
+- [TimFourcode/evo1300](https://github.com/TimFourcode/evo1300): `FLAG_SAVE` observation, first use of `8CE5DD03` (HORI 1300)
+- [m4jki/allty-1500s-control](https://github.com/m4jki/allty-1500s-control): `A2` as custom-mode add/delete with slots, `AE`/`AF` sensor commands
+- [JaJaJim/KMagicWheeltopBlip](https://github.com/JaJaJim/KMagicWheeltopBlip): MJ-6558 remote advertising format
+- [derstrassi/karoofirefly](https://github.com/derstrassi/karoofirefly), [JaJaJim/LightONKaroo](https://github.com/JaJaJim/LightONKaroo): Karoo integration and original Magicshine frames
+- Xingzhe Bluetooth Light Profile: <https://developer.imxingzhe.com/docs/device/light/> (© Shanghai Da Bu Zi Duo Information Technology Co.; only the parts needed here are summarised)

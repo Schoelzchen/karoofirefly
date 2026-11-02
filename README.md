@@ -53,6 +53,8 @@ Pair your ANT+ lights through **Karoo's native sensor settings** (Settings > Sen
 ### Magicshine BLE Lights
 KarooFireFly discovers Magicshine lights via Bluetooth when you open the settings. Supported models (M1/M2/M3 series) appear automatically. Tap to configure and the extension connects.
 
+> **Magicshine EVO 1700 UT:** see the measured [BLE reference](docs/magicshine-evo1700ut-ble-reference.md). The current A2-based control stores custom modes on this light and cannot switch it off. The Xingzhe Light Control Point described there can.
+
 ### Light Configuration
 Tap any light in the Connected Lights section to open its detail dialog. Assign a role (Front/Rear), configure Day and Night modes, and use the test buttons to preview. All changes auto-save.
 

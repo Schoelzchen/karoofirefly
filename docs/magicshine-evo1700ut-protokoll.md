@@ -191,3 +191,36 @@ Die UT sollte über den Light Control Point gesteuert werden, nicht über `A2`:
 - Danach `03 00`/`03 0F` für Aus/An, `04 00`/`04 01` für Abblend/Fernlicht, `06 <%>` für die Helligkeit, `03 11` für SOS.
 - Den Status aus `8CE5DD02` als Rückmeldung verwenden.
 - Akku aus `2A19`, Temperatur aus `A1` (Frame-Byte 8).
+
+## Phase 6: Bedeutung des Platz-Bytes in A2 (2026-11-02)
+
+Ergebnis: Das Byte nach `A2 01` ist ein **Platz für eigene Modi**, nicht die Wahl zwischen Abblend- und Fernlicht. Welche Lichtgruppe betroffen ist, ergibt sich aus dem Inhalt des Frames (welche Gruppe „an“ ist). Am Ende hatte die Lampe wieder je drei Modi, ohne App-Reparatur. Die Temperatur lag bei höchstens 38 °C.
+
+Acks: `DE07B60001B0ED` (Ergebnis `01`) und `DE07B60000B1ED` (Ergebnis `00`).
+
+| Nr | Frame | Ack | Beobachtung am Taster | Befund |
+|---|---|---|---|---|
+| 1 | Slot 01, Abblend 10 %, BB | 01 | – | springt auf 10 % |
+| 2 | Slot 02, Abblend 50 %, BB | 01 | Abblend 2 Modi, Fernlicht 3 | zwei eigene Modi in derselben Gruppe |
+| 4 | Slot 02, Abblend 50 %, AA | 00 | Abblend nur noch 10 % | Slot 2 trotz Ack `00` gelöscht |
+| 6 | Slot 01, Abblend 10 %, AA | 01 | je drei | Standardmodi zurück |
+| 8 | Slot 01, Fernlicht 25 %, BB | 01 | – | |
+| 9 | Slot 02, Abblend 25 %, BB | 01 | Abblend 1, Fernlicht 1 | Gruppe folgt dem Inhalt, nicht dem Slot |
+| 11 | Slot 01, Fernlicht 25 %, AA | 01 | – | Slot 1 gelöscht |
+| 12 | Slot 02, Abblend 25 %, AA | 00 | Abblend 1, Fernlicht 3 | keine Wirkung |
+| 14 | Slot 03, Abblend 10 %, BB | 00 | – | kein Sprung, vermutlich abgelehnt |
+| 15 | Slot 03, Abblend 50 %, AA | 00 | – | keine Wirkung |
+| 17 | Slot 01, Abblend 10 %, BB | 01 | – | springt auf 10 % |
+| 18 | `8CE5DD03`: `00`, `03 00` | `800001`, `800301` | – | **aus**, auch mit aktivem eigenem Modus |
+| 19 | `03 0F` | `800301` | – | an, mit 10 % (Intensität des eigenen Modus) |
+| 20 | Slot 01, Abblend 10 %, AA | 01 | je drei | Endzustand normal |
+
+Deutung:
+- Max' Hypothese (`01` = Abblend, `02` = Fernlicht) trifft nicht zu.
+- Die Allty-Hypothese (Slot-Nummer, `BB` anlegen, `AA` löschen) passt für die Slots 1 und 2.
+- **Wahrscheinlich rücken die Plätze nach dem Löschen nach.** Nach dem Löschen von Slot 1 lag der verbliebene Abblend-Modus vermutlich auf Slot 1. Deshalb blieb `AA` auf Slot 2 (Nr. 12) wirkungslos, und `BB` auf Slot 3 (Nr. 14) hätte eine Lücke gelassen. Unbestätigt.
+- Ob `AA` nach Slot oder nach Inhalt löscht, ist offen. Slot 3 wurde nie angelegt.
+- Die Phase-4-Hypothese „`AA` stellt die Gruppe wieder her, die im Frame an ist“ ist überholt. `AA` wirkt auf den Slot. Das „Fernlicht nur noch ein Modus“ aus Phase 4 stammt vermutlich von Nr. 14 dort (Slot 02, Fernlicht, BB), der nie gelöscht wurde.
+- Fehlt noch: eine Beschreibung der Taster-Gesten der Lampe.
+
+Die englische Referenz mit allen Ergebnissen steht in [`magicshine-evo1700ut-ble-reference.md`](magicshine-evo1700ut-ble-reference.md).
