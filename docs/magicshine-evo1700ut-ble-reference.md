@@ -272,6 +272,11 @@ Source: official *EVO 1700 UT User Manual* (magicshine.com, "User Manuals"), the
 
 The BLE intensity in `8CE5DD02` is therefore relative to the maximum of the active beam, not to 1700 lm. The manual does not mention SOS, although the light supports it via BLE. It does not state the battery capacity either.
 
+Owner's notes (more reliable than the manual's translation):
+- **Thermal behaviour:** The light reached **over 60 °C** in one of the owner's tests and **never switches off because of heat**; it dims down instead (thermal derating). In our tests up to 46 °C, no derating was observed in the status.
+- **No auto-off.**
+- **No StVZO approval.**
+
 ### 7.3 Battery indicator and low battery
 
 | Indicator | Meaning |
@@ -291,7 +296,7 @@ The BLE intensity in `8CE5DD02` is therefore relative to the maximum of the acti
 | ○ or □ hold 1 s | on / off (with a paired FTR tail light: both) |
 | ○ click | next level |
 | ○ double click | low beam ↔ high beam |
-| □ click | full output (1700 lm); a further click on ○ or □ returns |
+| □ click | **unconfirmed.** The manual says "full output". The owner reports that □ enters high-beam mode, where ○ then cycles the high-beam levels, and that the manual wording is a translation error. Measured so far: one □ click went from low beam to high beam 100 % (possibly the last used high-beam level); a second □ click returned to low beam 25 % |
 | □ double click | flash mode |
 | any button hold 5 s | lock / unlock the remote (3 s red / green) |
 
@@ -332,7 +337,7 @@ Effect on the UT, as reported via `8CE5DD02`:
 - ○ short: next level (25 → 50 → 100 %).
 - ○ long: on/off.
 - ○ double: switch to high beam.
-- □ short: full output (status `0F 01 64` = high beam 100 %); the next □/○ click returns (`0F 00 19`). This matches the manual (section 7.4).
+- □ short: from low beam to high beam (one sample: status `0F 01 64` = high beam 100 %); a second □ returned to low beam (`0F 00 19`). Whether □ selects "full output" (manual) or "high-beam mode at the last level, ○ then cycles high-beam levels" (owner) is not yet decided by measurement.
 - □ double (flash mode per manual) and □ long (on/off per manual) produced no status notification in the test; not verified.
 
 The payload contains **no device ID**. The light stores the **Bluetooth address of its paired remote**: characteristic `42820004` reads `600200003B77`, which is exactly the remote's address `60:02:00:00:3B:77`. So the light very probably filters remote packets by this address. This was not tested directly.
@@ -373,7 +378,8 @@ Other findings:
 
 - Exact gesture to clear the pairing on the UT (manual: click + 3 s; other Magicshine manuals: 10 s).
 - Does the light still accept BLE commands below 10 % battery (forced lowest level)?
-- Over-temperature behaviour (not in the manual; 46 °C measured without derating).
+- At which temperature does the light start to dim, and is the derating visible in the `8CE5DD02` intensity?
+- Remote □ click: "full output" or "high-beam mode, ○ cycles high-beam levels"?
 - Does `2A19` report finer battery steps during a discharge?
 - What do `A6 01` and the ack value `r` of `B6` mean?
 - Maximum number of custom-mode slots (≥ 6 confirmed).

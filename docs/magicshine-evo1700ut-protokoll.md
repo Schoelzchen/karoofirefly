@@ -377,3 +377,8 @@ Wichtigste Punkte und Abgleich:
 - **Lampe:** Klick bei ausgeschalteter Lampe zeigt den Akku. 3 s halten im ausgeschalteten Zustand sperrt die Lampe. Kopplung löschen laut UT-Handbuch: Klick, dann 3 s halten. Andere Quellen nennen 10 s, das ist ungeklärt.
 - **Di2:** Vor dem Koppeln die Fernbedienung entkoppeln. Fernbedienung und Di2 teilen sich offenbar die Kopplung. ANT+ läuft unabhängig davon.
 - Nicht im Handbuch: SOS (geht per BLE), Temperaturschutz, Auto-Off, Akkukapazität, StVZO.
+
+Korrekturen und Ergänzungen (Max):
+- **Temperatur:** In einem eigenen Test von Max erreichte die Lampe **über 60 °C**. Sie schaltet sich wegen Hitze **nie ab**, sondern regelt vorher die Helligkeit herunter. In unseren Tests (bis 46 °C) war im Status noch keine Abregelung zu sehen.
+- **Kein Auto-Off. Keine StVZO-Zulassung.**
+- **□ an der Fernbedienung:** Die Handbuch-Angabe „volle Lichtleistung“ hält Max für einen Übersetzungsfehler. Seine Beschreibung: □ schaltet in den Fernlicht-Modus, dort schaltet ○ die Fernlicht-Stufen durch. Phase 12 hat dafür nur einen einzigen Beleg (□ von Abblend → Fernlicht 100 %, □ erneut → Abblend 25 %). ○ nach □ wurde nie gemessen, die Frage ist deshalb offen. Ein Nachtest ist geplant.
