@@ -297,3 +297,14 @@ Laut Spezifikation gibt es außerdem Auto-Sleep, Sleep-Zeit, Aufwecken durch Ers
 - Endzustand: je drei Modi, Lampe aus, höchstens 39 °C, App die ganze Zeit geschlossen.
 
 Nachtrag (Max): In der Magicshine-App sind die Schalter „Light Sensor“ und „Motion Detection“ bei der UT sichtbar, aber ausgegraut und nicht wählbar. Die UT hat vermutlich keinen Lichtsensor. Die Magicshine-Befehle `AF`/`AE` werden deshalb nicht weiter untersucht.
+
+## Phase 11: Abfrage der Functions im Xingzhe-Protokoll (2026-11-02)
+
+Gesendet wurden nur Abfragen mit `FF` auf `8CE5DD03`: `10`, `11`, `12`, `13`, `14`, `15`, `16`, `17`, `18`, `19`, `1A`, `24`. Es gab zwei Runden, einmal mit ausgeschalteter und einmal mit eingeschalteter Lampe.
+
+Ergebnis: **Keine einzige Antwort**, keine Status-Meldung, keine sichtbare Änderung. `00` wurde normal beantwortet. Taster und Modi waren danach normal.
+
+Folgerungen:
+- Die UT unterstützt Auto-Sleep, Aufwecken, Sleep-Zeit, Bremslicht, Lichtsensor, Animation, Navigation und die Fernbedienungs-Abfrage über dieses Protokoll nicht. Unbekannte Befehle ignoriert sie still, statt wie in der Spezifikation vorgesehen mit `80 <Op> 02` zu antworten. Genauso verhält sie sich bei `03 07`.
+- Die Fernbedienungs-Kennung lässt sich so nicht auslesen.
+- Korrektur zu Phase 10: Der Status `2F00010000FF` direkt nach dem Verbinden war nicht veraltet, sondern bedeutet „aus“. Die Lampe war in Phase 10 zu Beginn vermutlich aus.
