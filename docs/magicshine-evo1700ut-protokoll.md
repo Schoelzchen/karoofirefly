@@ -134,3 +134,31 @@ Bestätigt: Frame-Byte 8 der `B1`-Antwort (Daten-Index 4). Bei eingeschaltetem L
 - Beim Freigeben der Lampe (Fahrtende, Extension inaktiv) **`AA` senden**, damit der Taster wieder normal funktioniert. Ohne `AA` bleibt die Lampe im zuletzt gesetzten Live-Zustand. Das erklärt sehr wahrscheinlich die „veränderten Modi“.
 - Temperatur aus Frame-Byte 8 lesen.
 - Akku zusätzlich aus `2A19` lesen.
+
+## Xingzhe „Bluetooth Light Profile“ (Service `ADB425D4-…`)
+
+Die Characteristics `8CE5DD01`–`8CE5DD04` gehören zum öffentlich dokumentierten Light Profile des Radcomputer-Herstellers Xingzhe: <https://developer.imxingzhe.com/docs/device/light/> (Version 1.6.0). Kurzfassung der hier relevanten Teile:
+
+| Characteristic | Name | Eigenschaften |
+|---|---|---|
+| `8CE5DD01` | Light Features | Read |
+| `8CE5DD02` | Light Machine Status | Read, Notify |
+| `8CE5DD03` | Light Control Point | Write (mit Response), Indicate |
+| `8CE5DD04` | Light Network | Write, Indicate (laut Spezifikation nicht implementiert) |
+
+Light Control Point: Format `<Opcode> <Parameter…>`, Antwort als Indication `80 <Opcode> <Result>` (`01` Erfolg, `02` nicht unterstützt, `03` ungültiger Parameter, `04` Fehler, `05` keine Berechtigung).
+
+| Opcode | Bedeutung |
+|---|---|
+| `00` | Request Control (zuerst senden) |
+| `01` | Reset der Gerätesteuerung (Umfang unklar, noch nicht getestet) |
+| `03 <Modus>` | Lichtmodus: `00` aus, `07` schnelles Blinken, `0F` dauerhaft an, `11` SOS |
+| `04 00` / `04 01` | Abblendlicht / Fernlicht |
+| `06 <0–100>` | Intensität in % |
+| `DF` | DFU-Modus. **Nie senden.** |
+
+Dekodierung der Werte der UT:
+- `8CE5DD01` = `0200818002000EFF6400`: Frontlicht. Modi aus (Bit 0), schnelles Blinken (7), dauerhaft an (15) und SOS (17). Abblend- und Fernlicht mit 3 Modi, Intensität bis 100 %, einfarbig. Das Functions-Feld fehlt (10 statt 20 Byte).
+- `8CE5DD02` = `2F00010F00FF`: Index 0, Frontlicht, Modus 15 (dauerhaft an), Abblendlicht, Intensität `FF` (nicht gemeldet).
+
+**Die UT meldet „Licht aus“ als unterstützten Modus.** Das evo1300-Projekt nutzt an der HORI 1300 bereits `00` und `04 01`/`04 00` auf diesem Kanal.
