@@ -162,10 +162,18 @@ Ack: `DE 07 B6 00 <r> <xor> ED`. Both `r = 01` and `r = 00` were observed. A del
 **What `BB` really does:** It does **not** set the light "live". It stores a custom mode, and the light switches to it immediately. From then on, the button cycles only through the custom modes of that beam group instead of its three factory modes. The custom mode survives power cycles. Deleting it with `AA` brings the factory modes back.
 
 Measured facts:
-- The slot is a slot number, **not** the beam choice. Two custom modes on slots 1 and 2, both low beam, gave two low-beam modes on the button.
-- The beam group is defined by which group is `on` in the frame. High beam on slot 1 plus low beam on slot 2 gave one custom mode in each group.
-- The official app always writes slot `01` and enables exactly one group. It sends `BB` while you move the slider and `AA` when you delete an entry or leave without saving. "Save" in the app sends nothing.
-- Probably the slots shift down after a delete (unconfirmed). After deleting slot 1, `AA` on slot 2 had no effect, and `BB` on slot 3 was rejected.
+- **Slot = position in one shared list of custom modes**, not the beam choice. The beam group is defined only by which group is `on` in the frame.
+- **Capacity:** slots 1–6 were all accepted, and the button cycles them in slot order. More were not tried; the other project assumes 20.
+- **Low and high beam share the slot list.** Writing a high-beam mode to a slot that held a low-beam mode replaces it.
+- **Slots shift down on delete.** After deleting slot 1 of six, the former slot 2 is slot 1 and slot 6 is empty. `AA` on an empty slot has no effect and is acked with `r = 00`.
+- **`AA` deletes by slot. The rest of the frame is ignored.** A delete with the wrong content still removed the mode in that slot.
+- `BB` on a slot beyond the end of the list (e.g. slot 3 with one mode stored) is rejected (`r = 00`, no effect). Appending to the next free slot works.
+- When the active custom mode is deleted, the light jumps to the next remaining mode, or back to the factory mode when none is left.
+- Ack `r`: `01` = applied, `00` = nothing changed (empty or out-of-range slot). Exception: one delete with `r = 00` did take effect in phase 6.
+- The official app always writes slot `01` and enables exactly one group. It sends `BB` while you move the slider and `AA` when you delete an entry or leave without saving. "Save" in the app sends nothing. The app UI offers one custom mode per beam; the light itself supports more.
+- Custom modes survive power cycles.
+
+**Safe clean-up:** repeat `AA` on slot `01` (any content) until the ack is `r = 00`. Then the list is empty, and both beams are back to their factory modes.
 
 **Pitfalls seen in existing projects:** Several Karoo extensions use `BB` for every mode change and never send `AA`. On the UT this leaves custom modes behind, and the button then has only one mode left per beam. To repair it, delete the entries in the Magicshine app, or send `AA` with the same slot and content.
 
@@ -236,7 +244,8 @@ Magicshine markets this as "FTR LightSync". Whether and how the UT pairs with it
 
 - Does `2A19` report finer battery steps during a discharge?
 - What do `A6 01` and the ack value `r` of `B6` mean?
-- Do the custom-mode slots shift after a delete? How many slots are there?
+- Maximum number of custom-mode slots (≥ 6 confirmed).
+- Is there a BLE command equivalent to a short button press ("next level")? None is known on the connection-based channels. The MJ-6558 broadcast is a candidate.
 - Do Control Point commands work without `00`? What happens on a button press during BLE control?
 - What does intensity above 50 % and on the high beam look like?
 - What do `FFE2`–`FFE7` and service `42820001` do?

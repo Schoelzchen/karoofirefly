@@ -224,3 +224,19 @@ Deutung:
 - Fehlt noch: eine Beschreibung der Taster-Gesten der Lampe.
 
 Die englische Referenz mit allen Ergebnissen steht in [`magicshine-evo1700ut-ble-reference.md`](magicshine-evo1700ut-ble-reference.md).
+
+## Phase 7: Kapazität und Nachrücken der Slots (2026-11-02)
+
+Die Modi am Taster wurden per Webcam gezählt. Max hat dafür den Taster gedrückt, der Mac hat nach jedem Druck die Wandhelligkeit gemessen. Die Temperatur lag bei höchstens 46 °C (helle Fernlicht-Stufen am Taster). Am Ende war die Lampe im Werkszustand, ohne App-Reparatur.
+
+| Frage | Ergebnis |
+|---|---|
+| Kapazität | Slots 1–6 angenommen (Ack `01`, Sprung). Am Taster 6 Modi in Slot-Reihenfolge (5/15/25/35/45/50 %). Mehr nicht getestet |
+| Nachrücken | **bestätigt.** Nach `AA` auf Slot 1 war Slot 6 leer: `AA` auf Slot 6 brachte Ack `00` und keine Wirkung, die 50 % blieben |
+| Löschen nach Slot oder Inhalt | **nach Slot.** `AA` auf Slot 1 mit falschem Inhalt löschte trotzdem den Modus auf Slot 1 |
+| Gemeinsame Slots | **ja.** Fernlicht 25 % auf Slot 1 ersetzte den Abblend-Modus dort. Danach je ein Modus pro Licht |
+| Aufräumen | wiederholt `AA` auf Slot 1, bis nichts mehr übrig ist |
+
+Standardmodi (Wandhelligkeit, nur grob vergleichbar): Abblend ca. 100 / 127 / 140, Fernlicht ca. 92 / 130 / 156.
+
+Hinweis: Ein BLE-Befehl, der einem kurzen Tastendruck entspricht („nächste Stufe“), ist auf den Verbindungskanälen nicht bekannt. Die Fernbedienung MJ-6558 sendet ihre Tasten per Advertising. Das kann macOS nicht nachahmen (kein eigenes Service-Data-Advertising), ein Android-Gerät wie der Karoo grundsätzlich schon. Dafür fehlt aber ein Mitschnitt der echten Fernbedienung.
