@@ -16,7 +16,7 @@ Unless a source is named, every statement here was measured on that unit. Statem
 | Manufacturer (`2A29`) | `Magicshine` |
 | Model (`2A24`) | `EVO1700 UT` |
 | Firmware (`2A26`) / Hardware (`2A27`) / Software (`2A28`) | `1.0.0` / `1.0.0` / `1.0.1` |
-| ANT+ product info (as shown by a Hammerhead Karoo 3) | model `522`, software `0.101`, hardware `1` |
+| ANT+ product info (as shown by a Hammerhead Karoo 3) | device number `33653`, model `522`, software `0.101`, hardware `1` |
 | Radio / bootloader | Nordic Semiconductor SoC with Nordic Secure DFU (`FE59`) |
 | Firmware state | updated via the official Magicshine iOS app on 2026-11-01, before all measurements |
 
@@ -41,7 +41,7 @@ The non-UT **EVO 1700** is a different design. It has a different GATT layout, a
 | | `8CE5DD02-…` | read, notify | Light Machine Status |
 | | `8CE5DD03-…` | write, indicate | **Light Control Point** (section 3) |
 | | `8CE5DD04-…` | write, indicate | Light Network (spec: not implemented). **Not tested** |
-| `42820001-D3E8-480B-95BB-2A34850D4048` | `42820002`–`42820008` | read | ASCII strings. `42820004` = `600200003B77` = **Bluetooth address of the paired MJ-6558 remote** (`60:02:00:00:3B:77`). `42820003`/`42820005` read `000000000000`, possibly empty pairing slots. `42820002` = `33653`, unknown. The `2901` descriptors were not read yet |
+| `42820001-D3E8-480B-95BB-2A34850D4048` | `42820002`–`42820008` | read | ASCII strings. `42820004` = `600200003B77` = **Bluetooth address of the paired MJ-6558 remote** (`60:02:00:00:3B:77`). `42820003`/`42820005` read `000000000000`, possibly empty pairing slots. `42820002` = `33653` = the light's **ANT+ device number** (confirmed by the owner on the Karoo). The `2901` descriptors were not read yet |
 | `FE59` Nordic Secure DFU | `8EC90003-F315-4F60-9FB8-838830DAEA50` | write, indicate | Buttonless DFU. **Never write** |
 
 The advertising contains the Xingzhe light service short UUID `25D4`.
@@ -328,7 +328,6 @@ Other findings:
 - What does intensity above 50 % and on the high beam look like?
 - What do `FFE2`–`FFE7` do?
 - How is the MJ-6558 paired, and are `42820003`/`42820005` further pairing slots? What do the `2901` descriptors of service `42820001` say?
-- What is `42820002` = `33653`?
 - Does a held BLE connection always block switching on with the remote?
 
 ---

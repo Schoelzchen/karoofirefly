@@ -348,3 +348,5 @@ Folgerungen:
 - Passives Mitlesen der Fernbedienung, z. B. als Eingabe für eine Karoo-Extension, funktioniert dagegen.
 - Die echte MJ-6558 funktionierte danach normal.
 - Offen: die Beschreibungen (`2901`) der Characteristics im Service `42820001`, die Bedeutung von `42820002` = `33653` und ob `42820003`/`42820005` freie Kopplungsplätze sind.
+
+Nachtrag: `42820002` = `33653` ist die **ANT+-Gerätenummer** der Lampe. Max hat das beim erneuten Koppeln am Karoo bestätigt. Der Service `42820001` enthält also Kennungen für Funk-Verbindungen: ANT+-Nummer, Adresse der gekoppelten Fernbedienung und vermutlich freie Plätze.
