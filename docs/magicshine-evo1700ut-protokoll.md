@@ -295,3 +295,5 @@ Laut Spezifikation gibt es außerdem Auto-Sleep, Sleep-Zeit, Aufwecken durch Ers
   - **Nebenwirkung:** Nach `AA` auf Slot 4 reagierte der Taster nicht mehr. Erst nach dem vollständigen Aufräumen und `03 0F` ging er wieder. Die Ursache ist offen; in Phase 6 lief eine ähnliche Lage ohne Blockade.
 - Der erste Status nach dem Verbinden war veraltet (`2F00010000FF` bei leuchtender Lampe).
 - Endzustand: je drei Modi, Lampe aus, höchstens 39 °C, App die ganze Zeit geschlossen.
+
+Nachtrag (Max): In der Magicshine-App sind die Schalter „Light Sensor“ und „Motion Detection“ bei der UT sichtbar, aber ausgegraut und nicht wählbar. Die UT hat vermutlich keinen Lichtsensor. Die Magicshine-Befehle `AF`/`AE` werden deshalb nicht weiter untersucht.

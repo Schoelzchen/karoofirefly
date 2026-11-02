@@ -132,6 +132,8 @@ Opcodes on the Light Control Point as listed in the Xingzhe spec, and whether th
 | `DA` | Date and time | 8 bytes | untested |
 | `DF` | Enter DFU | – | **never send** |
 
+The official app shows switches for "Light Sensor" and "Motion Detection" for the UT, but they are greyed out and cannot be used. The UT probably has no ambient light sensor. This matches its Features response, which reports no intensity ranges and no Functions field.
+
 Beyond the official app, the profile provides: real off/on, live beam and intensity changes without touching custom modes, live SOS, and a status notification for every change, including button presses.
 
 ### 3.4 Measured behaviour
