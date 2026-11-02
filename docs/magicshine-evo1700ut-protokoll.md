@@ -67,23 +67,70 @@ Direktes Lesen lieferte ein `B4`-Frame `DE13B400020800000A0000000000000000A7ED` 
 - Temperatur-Parser: der Marker `17 03` passt nicht, auf Index 4 umstellen.
 - Akku zusätzlich über den Standarddienst `180F`/`2A19` per Notify lesen und vergleichen, ob er feiner auflöst als `A4`.
 
-## Phase 2: A2-Befehle (2026-11-02, abgebrochen)
+## Firmware-Stand
 
-Gesendet wurden genau drei A2-Frames, alle mit Flag `00` statt `BB`:
+- Die Magicshine-App hat am 2026-11-01 beim ersten Verbinden ein Firmware-Update angeboten, und Max hat es installiert. Alle Messungen hier beziehen sich auf den Stand **nach** diesem Update.
+- Bluetooth Device Information: Firmware `1.0.0`, Hardware `1.0.0`, Software `1.0.1`.
+- ANT+-Produktinfo laut Karoo: Modellnummer `522`, Software `0.101`, Hardware `1`, Seriennummer `831635…`.
 
-| Schritt | Frame | Erwartet | Ergebnis |
-|---|---|---|---|
-| 0 | `DE14A2010101010000000000000000000000B6ED` | aus | Licht unverändert an, kein Ack |
-| 1 | `DE14A2010101010A00015000000000000000EDED` | Gruppe 0 auf 10 % | keine sichtbare Änderung, kein Ack |
-| Ende | `DE14A2010101010000000000000000000000B6ED` | aus | Licht unverändert an, per Taster ausgeschaltet |
+## Phase 2: eigene A2-Frames mit Flag `00` (2026-11-02)
 
-**Nebenwirkung:** Danach waren die Modi am Taster verändert. Beim Abblendlicht gibt es nur noch einen schwachen Modus, beim Fernlicht weiterhin alle drei.
+Gesendet wurden drei Frames mit Flag `00`:
+- `DE14A2010101010000000000000000000000B6ED` (zweimal)
+- `DE14A2010101010A00015000000000000000EDED`
 
-Folgerungen:
-- Bei der UT setzt `A2` **nicht** das aktuelle Licht, sondern überschreibt offenbar die **Modus-Liste** einer Lichtgruppe. Das passiert **auch mit Flag `00`**. Die Annahme aus dem evo1300-Projekt („`00` = nur vorübergehend“) gilt für die UT nicht.
-- Vermutlich ist das Byte nach `A2 01` die Anzahl der Einträge bzw. die Gruppe, gefolgt von Einträgen `(an, Muster, Helligkeit)`. Das ist unbestätigt.
-- KarooFireFly würde bei der UT mit jedem Moduswechsel die Modus-Liste der Lampe verändern. **Die BLE-Steuerung von KarooFireFly an der UT vorerst nicht benutzen.**
-- Temperatur: Frame-Byte 8 der B1-Antwort stieg von 27 auf 28. Das stützt die Index-4-Hypothese.
-- Von `2A19` und `FFE3` kamen keine Notifications.
+Die Lampe hat **keinen** davon bestätigt (kein `B6`-Ack) und das Licht nicht verändert. Sie verwirft Frames mit Flag `00` offenbar.
 
-Nächster Schritt: Die Magicshine-App mit PacketLogger mitschneiden, während die Modi in der App zurückgesetzt werden (siehe `magicshine-ble-analyse-apple.md`). Das liefert die korrekten Befehle für die UT. Bis dahin werden keine A2-Frames mehr gesendet.
+Dass die Modi am Taster danach verändert waren (Abblendlicht nur noch ein schwacher Modus), stammt deshalb sehr wahrscheinlich **nicht** von diesen Frames. Vermutlich war die Lampe noch von einem früheren Test (LightONKaroo bzw. App) mit Flag `BB` in einem „Live-Zustand“, siehe unten. Die Modi waren vor Phase 2 nicht geprüft worden.
+
+## Phase 3: Mitschnitt der offiziellen Magicshine-App (iPhone, PacketLogger)
+
+Die App schreibt Lichtbefehle **nur** auf `FFE0`. Die Kanäle `FFE4`, `FFE6`, `8CE5DD03/04` nutzt sie nie.
+
+### Beim Verbinden
+1. Indications bzw. Notify einschalten, `FFE0` und `2A19` lesen.
+2. `DE07A601EF4FED` (`A6 01`), Bedeutung offen, keine Antwort.
+3. `A1` und `A4`, danach alle 20 s erneut.
+
+### A2-Format (UT, laut App)
+
+`DE 14 A2 01 01 <G0: an, Muster, Wert> <G1: an, Muster, Wert> 00 00 00 00 00 00 <Flag> <XOR> ED`
+
+- G0 = Abblendlicht, G1 = Fernlicht. Die App schaltet immer genau eine Gruppe an. Laut App „beinhaltet“ das Fernlicht das Abblendlicht.
+- Muster: `01` dauerhaft, `02` SOS, `03` Flash.
+- Wert: Prozent als Byte (z. B. `0x18` = 24 %, `0x32` = 50 %).
+- Das Byte nach `A2 01` ist immer `01`. KarooFireFly sendet hier `02`; ob die UT das akzeptiert, ist offen.
+- **Flag `BB`:** Licht wird sofort live gesetzt. Antwort `DE07B60001B0ED`.
+- **Flag `AA`:** beendet den Live-Zustand, die Lampe kehrt zu ihren eigenen Modi zurück. Die App sendet das beim Löschen eines Eintrags und beim Verlassen ohne Speichern. Danach hatte der Taster wieder je drei Modi. Antwort ebenfalls `B6`-Ack.
+- **Flag `00`:** von der App nie gesendet, von der Lampe ignoriert.
+- „Speichern“ in der App sendet nichts an die Lampe. Die eigenen Modi liegen also in der App, nicht in der Lampe.
+
+Beispiele aus dem Mitschnitt:
+
+| Zweck | Frame |
+|---|---|
+| Abblend 10 % | `DE14A2010101010A000000000000000000BB07ED` |
+| Abblend 24 % | `DE14A20101010118000000000000000000BB15ED` |
+| Abblend 50 % | `DE14A20101010132000000000000000000BB3FED` |
+| Fernlicht 24 % | `DE14A20101000118010118000000000000BB0CED` |
+| Fernlicht 50 % | `DE14A20101000118010132000000000000BB26ED` |
+| Abblend Flash 24 % | `DE14A20101010318000118000000000000BB0EED` |
+| Abblend SOS 24 % | `DE14A20101010218000118000000000000BB0FED` |
+| Fernlicht Flash 24 % | `DE14A20101000218010318000000000000BB0DED` |
+| Live-Zustand beenden | `DE14A20101010118000000000000000000AA04ED` |
+
+### Temperatur
+Bestätigt: Frame-Byte 8 der `B1`-Antwort (Daten-Index 4). Bei eingeschaltetem Licht stieg der Wert von 28 auf 33 °C, alle anderen Bytes blieben gleich.
+
+### Offen
+- Wie die Lampe per BLE ausgeht. Die App hat dafür keine Funktion.
+- Ob ein `BB`-Zustand einen Neustart der Lampe übersteht.
+- Bedeutung von `A6 01`.
+- Auflösung des Akkus über `2A19` bei einer Entladung.
+
+## Konsequenzen für KarooFireFly
+
+- Frames auf das App-Format umstellen: Byte `01` nach `A2 01`, G0 = Abblend, G1 = Fernlicht.
+- Beim Freigeben der Lampe (Fahrtende, Extension inaktiv) **`AA` senden**, damit der Taster wieder normal funktioniert. Ohne `AA` bleibt die Lampe im zuletzt gesetzten Live-Zustand. Das erklärt sehr wahrscheinlich die „veränderten Modi“.
+- Temperatur aus Frame-Byte 8 lesen.
+- Akku zusätzlich aus `2A19` lesen.
