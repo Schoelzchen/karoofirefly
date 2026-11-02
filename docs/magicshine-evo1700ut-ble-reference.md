@@ -221,6 +221,8 @@ Measured facts:
 
 **Safe clean-up:** repeat `AA` on slot `01` (any content) until the ack is `r = 00`. Then the list is empty, and both beams are back to their factory modes.
 
+**Signature of an "off" written as A2:** `BB` with intensity 0 (e.g. `DE14A20101010100000000000000000000BB0DED`, used as "off" by KarooFireFly and LightONKaroo) does not switch the light off. It stores a custom mode that the light runs at its minimum, reported as intensity `01` (1 %). Such a stray 1 % low-beam mode was found once on the light after it had been re-added on a Karoo with LightONKaroo installed. The source was not proven.
+
 **Pitfalls seen in existing projects:** Several Karoo extensions use `BB` for every mode change and never send `AA`. On the UT this leaves custom modes behind, and the button then has only one mode left per beam. To repair it, delete the entries in the Magicshine app, or send `AA` with the same slot and content.
 
 ---
@@ -291,14 +293,20 @@ Owner's notes (more reliable than the manual's translation):
 
 ### 7.4 MJ-6558 remote
 
-| Gesture | Effect |
+Behaviour measured via the `8CE5DD02` status while the owner pressed the remote (factory modes, phase 14):
+
+| Gesture | Effect (measured) |
 |---|---|
-| ○ or □ hold 1 s | on / off (with a paired FTR tail light: both) |
-| ○ click | next level |
-| ○ double click | low beam ↔ high beam |
-| □ click | **unconfirmed.** The manual says "full output". The owner reports that □ enters high-beam mode, where ○ then cycles the high-beam levels, and that the manual wording is a translation error. Measured so far: one □ click went from low beam to high beam 100 % (possibly the last used high-beam level); a second □ click returned to low beam 25 % |
-| □ double click | flash mode |
-| any button hold 5 s | lock / unlock the remote (3 s red / green) |
+| ○ or □ hold 1 s | on / off (with a paired FTR tail light: both), per manual |
+| ○ click | next level of the current beam: 25 → 50 → 100 → 25 % |
+| ○ double click | low beam ↔ high beam; the new beam starts at 25 % (seen twice) |
+| □ click | **high beam 100 % ("full output")** from any low-beam level |
+| □ or ○ click while in □ full output | back to the **previous** low-beam level |
+| ○ click after ○ double click (high-beam mode) | cycles the high-beam levels 25 → 50 → 100 → 25 % |
+| □ double click | flash mode; a second □ double click flashes faster (probably Day/Night Flash); ○ click ends it. **No status notification is sent for flashing** |
+| any button hold 5 s | lock / unlock the remote (3 s red / green), per manual |
+
+So both descriptions are right: the manual's "□ = full output" is accurate, and the owner's "high-beam mode where ○ cycles the levels" is the mode reached with ○ double click.
 
 - **Pairing (leaflet):** Switch the light on. Hold ○ and □ for about 5 s until the remote flashes blue. Hold the remote close to the light button until the light flashes blue as well, then click ○ or □. Both indicators show blue for 2 s.
 - The remote charges in about 1 h. Its indicator also shows the light's battery state (green / red / flashing red).
@@ -337,8 +345,8 @@ Effect on the UT, as reported via `8CE5DD02`:
 - ○ short: next level (25 → 50 → 100 %).
 - ○ long: on/off.
 - ○ double: switch to high beam.
-- □ short: from low beam to high beam (one sample: status `0F 01 64` = high beam 100 %); a second □ returned to low beam (`0F 00 19`). Whether □ selects "full output" (manual) or "high-beam mode at the last level, ○ then cycles high-beam levels" (owner) is not yet decided by measurement.
-- □ double (flash mode per manual) and □ long (on/off per manual) produced no status notification in the test; not verified.
+- □ short: high beam 100 %; □ or ○ again returns to the previous low-beam level. See section 7.4 for the complete, measured behaviour.
+- □ double (flash mode) produces no status notification. □ long (on/off per manual) was not verified.
 
 The payload contains **no device ID**. The light stores the **Bluetooth address of its paired remote**: characteristic `42820004` reads `600200003B77`, which is exactly the remote's address `60:02:00:00:3B:77`. So the light very probably filters remote packets by this address. This was not tested directly.
 
@@ -379,7 +387,7 @@ Other findings:
 - Exact gesture to clear the pairing on the UT (manual: click + 3 s; other Magicshine manuals: 10 s).
 - Does the light still accept BLE commands below 10 % battery (forced lowest level)?
 - At which temperature does the light start to dim, and is the derating visible in the `8CE5DD02` intensity?
-- Remote □ click: "full output" or "high-beam mode, ○ cycles high-beam levels"?
+- Flash modes are not reported in `8CE5DD02`. Is there any other way to detect them over BLE?
 - Does `2A19` report finer battery steps during a discharge?
 - What do `A6 01` and the ack value `r` of `B6` mean?
 - Maximum number of custom-mode slots (≥ 6 confirmed).

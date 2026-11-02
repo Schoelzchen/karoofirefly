@@ -382,3 +382,20 @@ Korrekturen und Ergänzungen (Max):
 - **Temperatur:** In einem eigenen Test von Max erreichte die Lampe **über 60 °C**. Sie schaltet sich wegen Hitze **nie ab**, sondern regelt vorher die Helligkeit herunter. In unseren Tests (bis 46 °C) war im Status noch keine Abregelung zu sehen.
 - **Kein Auto-Off. Keine StVZO-Zulassung.**
 - **□ an der Fernbedienung:** Die Handbuch-Angabe „volle Lichtleistung“ hält Max für einen Übersetzungsfehler. Seine Beschreibung: □ schaltet in den Fernlicht-Modus, dort schaltet ○ die Fernlicht-Stufen durch. Phase 12 hat dafür nur einen einzigen Beleg (□ von Abblend → Fernlicht 100 %, □ erneut → Abblend 25 %). ○ nach □ wurde nie gemessen, die Frage ist deshalb offen. Ein Nachtest ist geplant.
+
+## Phase 14: Tasten der MJ-6558, Status mitgelesen (2026-11-02)
+
+Max drückte die echte Fernbedienung, der Mac las nur den Status `8CE5DD02` mit (Werkszustand der Modi).
+
+| Taste | Ergebnis laut Status |
+|---|---|
+| ○ kurz | nächste Stufe im aktuellen Licht: 25 → 50 → 100 → 25 % |
+| □ kurz | **immer Fernlicht 100 %**, von jeder Abblend-Stufe aus |
+| □ oder ○ kurz danach | zurück zur **vorherigen** Abblend-Stufe |
+| ○ doppelt | Abblend ↔ Fernlicht, jeweils auf 25 % (zweimal gesehen) |
+| ○ kurz nach ○ doppelt | Fernlicht-Stufen 25 → 50 → 100 → 25 % |
+| □ doppelt | Blinken. Ein zweites □ doppelt blinkt schneller, ○ kurz beendet es. **Kein Status-Notify beim Blinken** |
+
+Ergebnis: Beide Beschreibungen stimmen. „□ = volle Lichtleistung“ aus dem Handbuch ist korrekt. Max' „Fernlicht-Modus mit durchschaltbaren Stufen“ ist der Modus, den man über ○ doppelt erreicht.
+
+**Nebenfund:** Zu Beginn lag ein eigener Modus „Abblend 1 %“ auf Slot 1 (Status `2F00010F0001`). Die App zeigte keinen Eintrag, und unsere Tests haben nie 1 % gesendet. Genau so verhält sich aber das „Aus“ von KarooFireFly und LightONKaroo: `A2` mit Helligkeit 0 und `BB` legt einen eigenen Modus an, den die Lampe mit Minimum betreibt (vgl. Phase 4, Schritt 8: „sehr dunkel“). Vermutlich hat also LightONKaroo beim erneuten Hinzufügen der Lampe am Karoo per BLE geschrieben, trotz deaktivierter BLE-Option. Bewiesen ist das nicht. Auf Max' Wunsch hat der Mac den Modus gelöscht (`AA` auf Slot 1), danach wieder je drei Modi.
